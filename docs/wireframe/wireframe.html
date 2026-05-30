@@ -1,240 +1,370 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>fitting — UX Flow V6 Wireframe</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=2000">
+<title>OOTD 패션 데이팅 앱 — UX FLOW V6</title>
 <style>
-  :root {
-    --bg: #050505;
-    --frame: #111;
-    --frame-line: #2a2a2a;
-    --lime: #d4ff3f;
-    --text: #f2f2f2;
-    --muted: #7d7d7d;
-    --chip: #1c1c1c;
-    --grad1: #d4ff3f;
-    --grad2: #ff7a59;
-  }
-  * { box-sizing: border-box; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
-    margin: 0; background: var(--bg); color: var(--text);
-    font-family: "Pretendard", -apple-system, BlinkMacSystemFont, sans-serif;
-    padding: 40px 28px 70px;
+    background: #0a0a0c;
+    color: #e0e0e0;
+    font-family: 'Pretendard', 'Noto Sans CJK KR', sans-serif;
+    min-width: 1900px;
+    overflow-x: auto;
   }
-  .head { margin-bottom: 36px; }
-  .head h1 { font-size: 26px; font-weight: 800; margin: 0 0 6px; }
-  .head h1 span { color: var(--lime); }
-  .head p { color: var(--muted); font-size: 12px; letter-spacing: 2px; margin: 0; }
-  .flow {
-    display: flex; gap: 26px; overflow-x: auto; padding-bottom: 24px;
-    align-items: flex-start;
+  .page { padding: 48px 60px 60px; }
+
+  .topbar {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    margin-bottom: 48px; border-bottom: 1px solid #1a1a1e; padding-bottom: 20px;
   }
-  .col { flex: 0 0 248px; }
-  .step-no { color: var(--muted); font-size: 13px; letter-spacing: 6px; text-align: center; margin-bottom: 12px; }
+  .topbar-left h1 { font-size: 22px; font-weight: 900; color: #fff; letter-spacing: 1px; }
+  .topbar-left h1 span { color: #c8ff00; }
+  .topbar-left p { font-size: 11px; color: #555; margin-top: 4px; letter-spacing: 0.5px; text-transform: uppercase; }
+  .topbar-right { display: flex; gap: 8px; align-items: center; }
+  .topbar-tag { padding: 4px 12px; border: 1px solid #2a2a2e; border-radius: 14px; font-size: 10px; color: #666; letter-spacing: 0.5px; }
+  .topbar-version { padding: 4px 12px; background: #c8ff00; border-radius: 14px; font-size: 10px; color: #0a0a0c; font-weight: 700; letter-spacing: 0.5px; }
+
+  .flow-row { display: flex; align-items: flex-start; justify-content: center; gap: 0; }
+
+  .screen-group { display: flex; flex-direction: column; align-items: center; }
+  .screen-num { font-size: 16px; font-weight: 800; color: #fff; letter-spacing: 3px; margin-bottom: 14px; }
+
   .phone {
-    background: var(--frame); border: 1px solid var(--frame-line);
-    border-radius: 26px; padding: 22px 18px; min-height: 470px;
-    display: flex; flex-direction: column;
+    width: 210px; height: 460px;
+    background: #111115; border: 1.5px solid #232328;
+    border-radius: 26px; overflow: hidden; position: relative;
+    box-shadow: 0 6px 30px rgba(0,0,0,0.5);
   }
-  .caption { text-align: center; margin-top: 14px; }
-  .caption b { font-size: 14px; letter-spacing: 4px; }
-  .caption small { display: block; color: var(--muted); font-size: 11px; margin-top: 4px; }
-  /* shared bits */
-  .badge { align-self: center; font-size: 10px; letter-spacing: 1px; color: var(--lime);
-    border: 1px solid var(--lime); border-radius: 14px; padding: 3px 10px; margin-bottom: 14px; }
-  .title { font-size: 17px; font-weight: 800; line-height: 1.4; text-align: center; }
-  .desc { color: var(--muted); font-size: 11px; text-align: center; line-height: 1.6; margin: 10px 0 16px; }
-  .label { color: var(--muted); font-size: 11px; margin: 12px 0 6px; }
-  .row { display: flex; gap: 8px; }
-  .seg { flex: 1; text-align: center; padding: 9px 0; border-radius: 9px; font-size: 12px;
-    border: 1px solid var(--frame-line); background: var(--chip); color: var(--muted); }
-  .seg.on { background: var(--lime); color: #000; border-color: var(--lime); font-weight: 700; }
-  .input { border: 1px solid var(--frame-line); background: #0d0d0d; border-radius: 9px;
-    padding: 11px; font-size: 12px; color: var(--text); }
-  .btn { margin-top: auto; background: var(--lime); color: #000; font-weight: 800;
-    text-align: center; padding: 13px; border-radius: 11px; font-size: 13px; }
-  .chip { background: var(--chip); color: var(--lime); font-size: 10px; padding: 4px 9px; border-radius: 12px; }
-  .chips { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
-  .avatar { width: 52px; height: 52px; border-radius: 50%; align-self: center;
-    background: radial-gradient(circle at 30% 30%, var(--grad1), var(--grad2)); margin-bottom: 12px; }
-  .list-item { border: 1px solid var(--frame-line); border-radius: 10px; padding: 12px;
-    font-size: 12px; display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
-  .list-item .n { color: var(--lime); font-weight: 800; }
-  .check { font-size: 11px; color: var(--muted); margin: 6px 0; }
-  .bar { height: 6px; background: #1c1c1c; border-radius: 4px; margin: 6px 0 12px; overflow: hidden; }
-  .bar > i { display: block; height: 100%; background: var(--lime); border-radius: 4px; }
-  .progress-ring { width: 56px; height: 56px; border-radius: 50%; align-self: center;
-    border: 4px solid #1c1c1c; border-top-color: var(--lime); margin: 18px 0; }
-  .big { font-size: 46px; font-weight: 900; color: var(--lime); text-align: center; line-height: 1; }
-  .metric { display: flex; align-items: center; gap: 8px; font-size: 11px; margin: 5px 0; }
-  .metric .mbar { flex: 1; height: 6px; background: #1c1c1c; border-radius: 4px; overflow: hidden; }
-  .metric .mbar > i { display: block; height: 100%;
-    background: linear-gradient(90deg, var(--grad1), var(--grad2)); }
-  .bubble { font-size: 11px; padding: 9px 11px; border-radius: 12px; margin-bottom: 8px; max-width: 80%; line-height: 1.5; }
-  .bubble.them { background: var(--chip); align-self: flex-start; }
-  .bubble.me { background: var(--lime); color: #000; align-self: flex-end; }
-  .ai-suggest { border: 1px solid var(--lime); border-radius: 12px; padding: 9px;
-    font-size: 10px; color: var(--lime); margin-bottom: 8px; line-height: 1.5; }
-  .point { font-size: 11px; margin: 5px 0; line-height: 1.5; }
-  .point.warn { color: var(--grad2); }
+  .phone::before {
+    content: ''; position: absolute; top: 7px; left: 50%;
+    transform: translateX(-50%); width: 50px; height: 5px;
+    background: #1e1e22; border-radius: 3px; z-index: 10;
+  }
+  .pc { padding: 22px 12px 12px; height: 100%; display: flex; flex-direction: column; }
+
+  .screen-meta { margin-top: 14px; text-align: center; }
+  .screen-meta .title { font-size: 11px; font-weight: 700; color: #c8ff00; letter-spacing: 2px; text-transform: uppercase; }
+  .screen-meta .desc { font-size: 9.5px; color: #555; margin-top: 3px; }
+
+  .arrow { display: flex; align-items: center; justify-content: center; width: 44px; min-width: 44px; height: 460px; padding-top: 30px; }
+  .arrow-inner { width: 28px; height: 2px; background: rgba(200,255,0,0.4); position: relative; }
+  .arrow-inner::after { content: ''; position: absolute; right: -5px; top: 50%; transform: translateY(-50%); border-top: 5px solid transparent; border-bottom: 5px solid transparent; border-left: 7px solid rgba(200,255,0,0.5); }
+
+  .tag { display: inline-block; padding: 3px 9px; border-radius: 10px; font-size: 8px; font-weight: 600; letter-spacing: 0.3px; }
+  .tag-accent { background: rgba(200,255,0,0.15); color: #c8ff00; }
+
+  .cta {
+    display: block; width: 100%; padding: 9px;
+    background: #c8ff00; color: #0a0a0c;
+    border: none; border-radius: 12px;
+    font-size: 10px; font-weight: 700; text-align: center;
+    font-family: inherit; line-height: 1.5; margin-top: auto;
+  }
+  .sub { font-size: 9px; color: #777; line-height: 1.5; font-weight: 300; }
+  .heading { font-size: 14px; font-weight: 700; color: #fff; line-height: 1.5; }
+  .form-label { font-size: 8px; color: #666; margin-bottom: 3px; margin-top: 7px; }
+  .form-input { width: 100%; padding: 7px 10px; background: #1a1a1e; border: 1px solid #2a2a30; border-radius: 8px; font-size: 10px; color: #ccc; }
+  .form-toggle { display: flex; gap: 6px; }
+  .toggle-btn { flex: 1; padding: 6px; border-radius: 8px; font-size: 10px; text-align: center; font-weight: 500; background: #1a1a1e; border: 1px solid #2a2a30; color: #888; }
+  .toggle-btn.active { background: #c8ff00; color: #0a0a0c; font-weight: 700; border-color: #c8ff00; }
+
+  .upload-item { background: #161619; border: 1.5px solid #2a2a30; border-radius: 10px; padding: 8px 10px; display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+  .upload-item.active { border-color: #c8ff00; }
+  .upload-item .num { width: 20px; height: 20px; background: #c8ff00; color: #0a0a0c; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 8px; font-weight: 800; flex-shrink: 0; }
+  .upload-item .num.dim { background: #2a2a30; color: #666; }
+  .upload-item .info .name { font-size: 9px; color: #ddd; font-weight: 600; }
+  .upload-item .info .note { font-size: 7px; color: #666; margin-top: 1px; }
+  .thumb { width: 48px; height: 60px; background: #1a1a1e; border: 1.5px solid #2a2a30; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 7px; color: #555; text-transform: uppercase; letter-spacing: 0.5px; }
+  .thumb.active { border-color: #c8ff00; }
+
+  .loading-title { font-size: 12px; font-weight: 700; color: #fff; text-align: center; margin: 10px 0 10px; }
+  .spinner { width: 38px; height: 38px; border: 3px solid #1e1e22; border-top: 3px solid #c8ff00; border-radius: 50%; margin: 0 auto 12px; }
+  .step-item { display: flex; align-items: center; gap: 7px; padding: 4px 0; font-size: 8px; color: #888; }
+  .step-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+  .step-dot.on { background: #c8ff00; }
+  .step-dot.glow { background: #c8ff00; box-shadow: 0 0 6px rgba(200,255,0,0.5); }
+  .step-dot.off { background: #333; }
+  .progress-bar { width: 100%; height: 3px; background: #1e1e22; border-radius: 2px; margin-top: 8px; overflow: hidden; }
+  .progress-fill { width: 62%; height: 100%; background: linear-gradient(90deg, #c8ff00, #a0cc00); border-radius: 2px; }
+
+  .profile-type { font-size: 11px; font-weight: 400; color: #ccc; text-align: center; margin: 4px 0 2px; line-height: 1.6; }
+  .profile-type strong { font-weight: 800; color: #fff; font-size: 13px; }
+  .keyword-row { display: flex; flex-wrap: wrap; gap: 3px; justify-content: center; margin: 3px 0; }
+  .kw { padding: 2px 7px; background: rgba(200,255,0,0.1); border-radius: 8px; font-size: 7px; color: #c8ff00; font-weight: 500; }
+  .stat-line { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px solid #1a1a1e; font-size: 8px; }
+  .stat-line .label { color: #777; }
+  .stat-line .val { color: #fff; font-weight: 600; font-size: 9px; }
+  .temp-bar { width: 60px; height: 4px; background: #1e1e22; border-radius: 3px; display: inline-block; vertical-align: middle; margin-right: 4px; overflow: hidden; }
+  .temp-fill { height: 100%; background: linear-gradient(90deg, #c8ff00, #ff6b00); border-radius: 3px; }
+  .color-dots { display: flex; gap: 3px; }
+  .cdot { width: 11px; height: 11px; border-radius: 50%; border: 1px solid #333; }
+  .mood-tags { display: flex; flex-wrap: wrap; gap: 3px; margin: 2px 0; }
+  .mood { padding: 2px 6px; background: rgba(160,100,255,0.12); border-radius: 7px; font-size: 7px; color: #c4a0ff; }
+  .ai-note { background: #151518; border-left: 2px solid #c8ff00; border-radius: 8px; padding: 5px 8px; font-size: 7px; color: #aaa; line-height: 1.5; margin-top: 4px; }
+
+  .match-hero .name { font-size: 16px; font-weight: 800; color: #fff; }
+  .match-hero .age { font-size: 10px; color: #888; margin-left: 5px; }
+  .match-bio { font-size: 7.5px; color: #777; line-height: 1.5; margin: 4px 0; padding: 5px 7px; background: #151518; border-radius: 8px; }
+  .match-actions { display: flex; gap: 4px; margin-top: 5px; }
+  .ma { flex: 1; padding: 5px; border-radius: 8px; font-size: 7.5px; text-align: center; font-weight: 600; font-family: inherit; }
+  .ma.like { background: rgba(255,80,120,0.12); color: #ff5078; }
+  .ma.pass { background: #1a1a1e; color: #666; }
+
+  .chat-header { display: flex; align-items: center; gap: 7px; padding-bottom: 7px; border-bottom: 1px solid #1e1e22; margin-bottom: 6px; }
+  .chat-avatar { width: 26px; height: 26px; background: #2a2a30; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #888; }
+  .chat-name { font-size: 10px; font-weight: 700; color: #fff; }
+  .chat-badge { font-size: 7px; color: #c8ff00; background: rgba(200,255,0,0.1); padding: 2px 5px; border-radius: 6px; margin-left: auto; }
+  .bubble { max-width: 82%; padding: 6px 9px; border-radius: 11px; font-size: 8px; line-height: 1.5; margin-bottom: 4px; }
+  .bubble-them { background: #1a1a1e; color: #ccc; border-bottom-left-radius: 4px; }
+  .bubble-me { background: rgba(200,255,0,0.12); color: #c8ff00; border-bottom-right-radius: 4px; margin-left: auto; }
+  .bubble-ai { background: #151518; border: 1px solid #2a2a30; color: #aaa; padding: 6px 9px; border-radius: 9px; font-size: 7px; line-height: 1.5; margin: 4px 0; }
+  .bubble-ai .ai-label { font-size: 6.5px; color: #c8ff00; font-weight: 700; margin-bottom: 2px; letter-spacing: 0.5px; }
+  .chat-input { display: flex; align-items: center; gap: 5px; margin-top: auto; padding-top: 6px; border-top: 1px solid #1e1e22; }
+  .chat-field { flex: 1; padding: 6px 9px; background: #1a1a1e; border: 1px solid #2a2a30; border-radius: 14px; font-size: 8px; color: #888; }
+  .chat-send { width: 24px; height: 24px; background: #c8ff00; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #0a0a0c; flex-shrink: 0; }
+
+  .sf1 { background: #c8ff00; } .sf2 { background: #a0e000; } .sf3 { background: #c4a0ff; } .sf4 { background: #ff7a50; }
+
+  .chem-subtitle { font-size: 8px; color: #888; text-align: center; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 4px; }
+  .chem-big { font-size: 46px; font-weight: 900; color: #c8ff00; text-align: center; line-height: 1; }
+  .chem-big span { font-size: 16px; color: #666; }
+  .chem-bar-row { display: flex; align-items: center; gap: 5px; margin: 2px 0; }
+  .chem-bar-label { font-size: 7px; color: #888; width: 46px; flex-shrink: 0; }
+  .chem-bar-track { flex: 1; height: 4px; background: #1a1a1e; border-radius: 2px; overflow: hidden; }
+  .chem-bar-fill { height: 100%; border-radius: 2px; }
+  .point-item { display: flex; align-items: flex-start; gap: 4px; padding: 2px 0; font-size: 7.5px; color: #bbb; line-height: 1.4; }
+  .pi { width: 12px; height: 12px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 7px; flex-shrink: 0; }
+  .pi.g { background: rgba(200,255,0,0.15); color: #c8ff00; }
+  .pi.w { background: rgba(255,160,0,0.15); color: #ffa000; }
+
+  .footer { text-align: center; margin-top: 40px; font-size: 9px; color: #333; letter-spacing: 2px; }
 </style>
 </head>
 <body>
-  <div class="head">
-    <h1>OOTD 패션 데이팅 앱 — <span>UX FLOW V6</span></h1>
-    <p>MVP PRODUCT DESIGN · 7 CORE SCREENS · WIREFRAME</p>
+<div class="page">
+
+  <div class="topbar">
+    <div class="topbar-left">
+      <h1>OOTD 패션 데이팅 앱 — <span>UX FLOW V6</span></h1>
+      <p>MVP Product Design · 5 Core Screens · Merged Final</p>
+    </div>
+    <div class="topbar-right">
+      <span class="topbar-tag">OOTD</span>
+      <span class="topbar-tag">추천</span>
+      <span class="topbar-tag">매칭</span>
+      <span class="topbar-tag">플랫폼</span>
+      <span class="topbar-version">MVP v6.0</span>
+    </div>
   </div>
 
-  <div class="flow">
+  <div class="flow-row">
 
     <!-- 01 프로필 입력 -->
-    <div class="col">
-      <div class="step-no">0 1</div>
+    <div class="screen-group">
+      <div class="screen-num">01</div>
       <div class="phone">
-        <span class="badge">FASHION MATCHING</span>
-        <div class="title">옷만 보고,<br/>이 사람이랑 사귈 수 있을까?</div>
-        <div class="desc">얼굴보다 먼저 보이는 건 분위기.<br/>스타일 케미가 맞는 사람을 찾아보세요.</div>
-        <div class="label">성별</div>
-        <div class="row"><div class="seg on">♂ 남성</div><div class="seg">♀ 여성</div></div>
-        <div class="label">닉네임</div>
-        <div class="input">스타일러시_준</div>
-        <div class="label">나이</div>
-        <div class="input">26</div>
-        <div class="btn">내 스타일 분석하기</div>
+        <div class="pc">
+          <div style="text-align:center;"><span class="tag tag-accent">FASHION MATCHING</span></div>
+          <div class="heading" style="text-align:center; margin:10px 0 5px; font-size:14px;">옷만 보고,<br>이 사람이랑<br>사귈 수 있을까?</div>
+          <p class="sub" style="text-align:center; font-size:7.5px;">얼굴보다 먼저 보이는 건 분위기.<br>OOTD로 나의 꾸밈 바이브를 분석하고,<br>스타일 케미가 맞는 사람을 찾아보세요.</p>
+          <div style="margin-top:8px;">
+            <div class="form-label">👤 성 별</div>
+            <div class="form-toggle">
+              <div class="toggle-btn active">♂ 남성</div>
+              <div class="toggle-btn">♀ 여성</div>
+            </div>
+            <div class="form-label">✏ 닉네임</div>
+            <div class="form-input">스타일리시_준</div>
+            <div class="form-label">🎂 나이</div>
+            <div class="form-input">26</div>
+          </div>
+          <div style="flex:1;"></div>
+          <div class="cta">내 스타일 분석하기</div>
+        </div>
       </div>
-      <div class="caption"><b>프로필 입력</b><small>로그인 없이 바로 시작</small></div>
+      <div class="screen-meta">
+        <div class="title">프로필 입력</div>
+        <div class="desc">🚀 로그인 없이 바로 시작</div>
+      </div>
     </div>
+
+    <div class="arrow"><div class="arrow-inner"></div></div>
 
     <!-- 02 OOTD 업로드 -->
-    <div class="col">
-      <div class="step-no">0 2</div>
+    <div class="screen-group">
+      <div class="screen-num">02</div>
       <div class="phone">
-        <div class="desc">얼굴은 가려도 괜찮아요.<br/>잘 보이는 OOTD 사진을 올려주세요.</div>
-        <div class="row" style="margin-bottom:14px">
-          <div class="seg on">DAILY</div><div class="seg">DATE</div><div class="seg">ME</div>
+        <div class="pc">
+          <p class="sub" style="text-align:center; font-size:8px; margin-bottom:6px;">얼굴은 가려도 괜찮아요.<br>착장이 잘 보이는 OOTD 사진을 올려주세요.</p>
+          <div style="display:flex; gap:5px; margin-bottom:8px;">
+            <div class="thumb active">DAILY</div>
+            <div class="thumb">DATE</div>
+            <div class="thumb">ME</div>
+          </div>
+          <div style="font-size:7px; color:#555; margin-bottom:6px; text-align:center;">↕ 스와이프로 가이드</div>
+          <div class="upload-item active">
+            <div class="num">01</div>
+            <div class="info"><div class="name">👕 데일리룩</div><div class="note">필수 · 평소 스타일</div></div>
+          </div>
+          <div class="upload-item">
+            <div class="num dim">02</div>
+            <div class="info"><div class="name">💃 데이트룩</div><div class="note">선택 · 만남 스타일</div></div>
+          </div>
+          <div class="upload-item">
+            <div class="num dim">03</div>
+            <div class="info"><div class="name">✨ 가장 나다운 룩</div><div class="note">선택 · 자기다운 스타일</div></div>
+          </div>
+          <div style="flex:1;"></div>
+          <div class="cta">스타일 분석 시작</div>
         </div>
-        <div class="label">📷 업로드 가이드</div>
-        <div class="list-item"><span class="n">01</span> 데일리룩 · 평소·평소 스타일</div>
-        <div class="list-item"><span class="n">02</span> 데이트룩 · 선택·꾸민 스타일</div>
-        <div class="list-item"><span class="n">03</span> ✨ 가장 나다운 룩 · 자기다운</div>
-        <div class="btn">스타일 분석 시작</div>
       </div>
-      <div class="caption"><b>OOTD 업로드</b><small>1~3장 · 스타일 가이드</small></div>
+      <div class="screen-meta">
+        <div class="title">OOTD 업로드</div>
+        <div class="desc">📸 1~3장 · 스타일 가이드</div>
+      </div>
     </div>
+
+    <div class="arrow"><div class="arrow-inner"></div></div>
 
     <!-- 03 AI 분석 -->
-    <div class="col">
-      <div class="step-no">0 3</div>
+    <div class="screen-group">
+      <div class="screen-num">03</div>
       <div class="phone">
-        <div class="title" style="margin-top:18px">스타일 무드를<br/>분석중이에요</div>
-        <div class="progress-ring"></div>
-        <div class="check">● OOTD 이미지 분석</div>
-        <div class="check">● 스타일 키워드 추출</div>
-        <div class="check">● 꾸밈 온도 계산</div>
-        <div class="check">● 데이트 무드 추출</div>
-        <div class="check">● Style Profile 생성</div>
-        <div class="bar" style="margin-top:14px"><i style="width:62%"></i></div>
-        <div class="desc">컬러 팔레트를 분석하고 있어요...</div>
+        <div class="pc">
+          <div style="flex:0.4;"></div>
+          <div class="loading-title">스타일 무드를<br>분석중이에요</div>
+          <div class="spinner"></div>
+          <div>
+            <div class="step-item"><div class="step-dot on"></div>📷 OOTD 이미지 분석</div>
+            <div class="step-item"><div class="step-dot on"></div>🏷 스타일 키워드 추출</div>
+            <div class="step-item"><div class="step-dot glow"></div>🌡 꾸밈 온도 계산</div>
+            <div class="step-item"><div class="step-dot off"></div>🍷 데이트 무드 추출</div>
+            <div class="step-item"><div class="step-dot off"></div>🧬 Style Profile 생성</div>
+          </div>
+          <div class="progress-bar"><div class="progress-fill"></div></div>
+          <div style="flex:1;"></div>
+          <p class="sub" style="text-align:center; font-size:7px;">컬러 팔레트를 분석하고 있어요...</p>
+        </div>
       </div>
-      <div class="caption"><b>AI 분석</b><small>스타일 무드 AI 처리</small></div>
+      <div class="screen-meta">
+        <div class="title">AI 분석</div>
+        <div class="desc">🧠 스타일 무드 AI 처리</div>
+      </div>
     </div>
+
+    <div class="arrow"><div class="arrow-inner"></div></div>
 
     <!-- 04 스타일 프로필 -->
-    <div class="col">
-      <div class="step-no">0 4</div>
+    <div class="screen-group">
+      <div class="screen-num">04</div>
       <div class="phone">
-        <span class="badge">+ AI STYLE</span>
-        <div class="avatar"></div>
-        <div class="title">미니멀 시티보이</div>
-        <div class="label" style="text-align:center">↓ 꾸밈온도 83°C</div>
-        <div class="chips" style="margin:8px 0 14px">
-          <span class="chip">#미니멀</span><span class="chip">#모던/캐주얼</span>
-          <span class="chip">#모던</span><span class="chip">#시티무드</span>
+        <div class="pc">
+          <div style="text-align:center; margin-bottom:4px;"><span class="tag tag-accent">✦ AI STYLE</span></div>
+          <!-- 정방형 사진 1장 -->
+          <div style="width:72%; margin:0 auto; padding-bottom:72%; position:relative; flex-shrink:0; border-radius:10px; overflow:hidden; border:1.5px solid #c8ff00; background:#1e1e22;">
+            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:22px;color:#555;">👕</div>
+          </div>
+          <div class="profile-type" style="margin-top:5px;"><strong>스타일리시_준</strong>님은<br><strong>미니멀 시티보이</strong> 입니다.</div>
+          <div style="text-align:center; font-size:7.5px; color:#888; margin-bottom:3px;">🌡 꾸밈온도 83℃</div>
+          <div class="keyword-row">
+            <span class="kw">#미니멀</span>
+            <span class="kw">#모던캐주얼</span>
+            <span class="kw">#깔끔</span>
+          </div>
+          <div class="stat-line">
+            <span class="label">🔥 꾸밈 온도</span>
+            <span class="val"><span class="temp-bar"><span class="temp-fill" style="width:83%;"></span></span>83℃</span>
+          </div>
+          <div class="stat-line">
+            <span class="label">🎨 컬러 팔레트</span>
+            <div class="color-dots">
+              <div class="cdot" style="background:#1a1a1a;"></div>
+              <div class="cdot" style="background:#4a4a4a;"></div>
+              <div class="cdot" style="background:#8a8a8a;"></div>
+              <div class="cdot" style="background:#d0d0d0;"></div>
+            </div>
+          </div>
+          <div class="stat-line" style="border:none; padding-bottom:0;">
+            <span class="label">💫 데이트 무드</span>
+          </div>
+          <div class="mood-tags">
+            <span class="mood">🖼 전시</span><span class="mood">☕ 카페</span>
+            <span class="mood">🎵 공연</span><span class="mood">🍷 와인바</span>
+          </div>
+          <div class="ai-note">🤖 "유행을 그대로 따라가기보다, 깔끔한 핏과 무채색으로 자기 분위기를 만드는 타입이에요."</div>
+          <div style="flex:1;"></div>
+          <div class="cta" style="padding:6px;">나와 스타일 케미가 맞는 사람<br>만나보기</div>
         </div>
-        <div class="metric">🔥 꾸밈 온도 <span class="mbar"><i style="width:83%"></i></span> 8.3</div>
-        <div class="label">컬러 팔레트</div>
-        <div class="row" style="margin-bottom:12px">
-          <div style="flex:1;height:18px;border-radius:5px;background:#3a3a3a"></div>
-          <div style="flex:1;height:18px;border-radius:5px;background:#777"></div>
-          <div style="flex:1;height:18px;border-radius:5px;background:#bbb"></div>
-        </div>
-        <div class="label">데이트 무드</div>
-        <div class="chips" style="margin-bottom:12px">
-          <span class="chip">전시</span><span class="chip">카페</span>
-          <span class="chip">공연</span><span class="chip">와인바</span>
-        </div>
-        <div class="ai-suggest">💬 "유행을 그대로 따라가기보다, 절제된 무채색으로 자기 분위기를 만드는 타입이에요."</div>
-        <div class="btn">나와 스타일 케미 맞는 사람 만나보기</div>
       </div>
-      <div class="caption"><b>스타일 프로필</b><small>AI 생성 무드 결과</small></div>
+      <div class="screen-meta">
+        <div class="title">스타일 프로필</div>
+        <div class="desc">🎯 AI 생성 무드 결과</div>
+      </div>
     </div>
 
-    <!-- 05 매칭 리스트 -->
-    <div class="col">
-      <div class="step-no">0 5</div>
+    <div class="arrow"><div class="arrow-inner"></div></div>
+
+    <!-- 05 매칭 리스트 (꾸밈온도 상단 추가, 케미보기 삭제) -->
+    <div class="screen-group">
+      <div class="screen-num">05</div>
       <div class="phone">
-        <div class="desc">당신과 스타일 무드가<br/>맞는 사람을 찾았어요.</div>
-        <div class="avatar"></div>
-        <div class="title">지윤 24</div>
-        <div class="chips" style="margin:10px 0 14px">
-          <span class="chip">미니멀</span><span class="chip">다크톤</span><span class="chip">레이어드</span>
+        <div class="pc">
+          <p class="sub" style="text-align:center; font-size:8px; margin-bottom:4px;">
+            💘 당신과 스타일 무드가<br>맞는 사람을 찾았어요.
+          </p>
+          <!-- 꾸밈 온도 (6번에서 이동) -->
+          <div style="text-align:center; margin-bottom:5px;">
+            <div class="chem-subtitle">✦ STYLE SYNC</div>
+            <div class="chem-big" style="font-size:36px;">84<span style="font-size:14px;">%</span></div>
+            <div style="font-size:7px; color:#888; margin-top:2px;">🔗 분위기 싱크율</div>
+          </div>
+          <!-- 정방형 3장 1열 -->
+          <div style="display:flex; gap:4px; flex-shrink:0; margin-bottom:5px;">
+            <div style="flex:1; position:relative; padding-bottom:calc(33.33% - 3px); border-radius:8px; overflow:hidden; border:1.5px solid #c8ff00; background:#1e1e22;">
+              <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:16px;color:#555;">📸</div>
+            </div>
+            <div style="flex:1; position:relative; padding-bottom:calc(33.33% - 3px); border-radius:8px; overflow:hidden; border:1.5px solid #c8ff00; background:#1a1a1e;">
+              <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:16px;color:#555;">👕</div>
+            </div>
+            <div style="flex:1; position:relative; padding-bottom:calc(33.33% - 3px); border-radius:8px; overflow:hidden; border:1.5px solid #2a2a30; background:#1a1a1e;">
+              <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:16px;color:#555;">✨</div>
+            </div>
+          </div>
+          <div class="match-hero" style="text-align:center;">
+            <span class="name">지윤</span><span class="age">24</span>
+          </div>
+          <div class="keyword-row" style="margin:3px 0;">
+            <span class="kw">미니멀</span>
+            <span class="kw">다크톤</span>
+            <span class="kw">레이어드</span>
+          </div>
+          <div class="match-bio">👔 둘 다 단정한 실루엣 선호!<br>🌡 비슷한 톤 · 꾸밈온도 : 78℃</div>
+          <div class="match-actions">
+            <div class="ma like">♥</div>
+            <div class="ma pass">패스</div>
+          </div>
+          <div style="display:flex; justify-content:center; gap:4px; margin-top:6px;">
+            <div style="width:5px;height:5px;background:#c8ff00;border-radius:50%;"></div>
+            <div style="width:5px;height:5px;background:#333;border-radius:50%;"></div>
+            <div style="width:5px;height:5px;background:#333;border-radius:50%;"></div>
+          </div>
+          <div style="flex:1;"></div>
+          <p class="sub" style="text-align:center; font-size:7px;">← 스와이프로 다른 매치 보기 →</p>
         </div>
-        <div class="list-item">📍 둘 다 단정한 실루엣 선호</div>
-        <div class="list-item">🌡 비슷한 꾸밈온도 · 78°C</div>
-        <div class="row" style="margin-top:14px">
-          <div class="seg on">💬 케미 보기</div><div class="seg">♥</div><div class="seg">패스</div>
-        </div>
-        <div class="desc" style="margin-top:14px">← 스와이프로 다음 매칭 보기 →</div>
       </div>
-      <div class="caption"><b>매칭 리스트</b><small>스타일 무드 매칭 결과</small></div>
+      <div class="screen-meta">
+        <div class="title">매칭 리스트</div>
+        <div class="desc">💘 스타일 무드 매칭 결과</div>
+      </div>
     </div>
 
-    <!-- 06 케미 리포트 -->
-    <div class="col">
-      <div class="step-no">0 6</div>
-      <div class="phone">
-        <div class="label" style="text-align:center; letter-spacing:4px">+ STYLE SYNC</div>
-        <div class="big">84<span style="font-size:22px">%</span></div>
-        <div class="desc">🔗 분석기 싱크율</div>
-        <div class="metric">스타일 <span class="mbar"><i style="width:88%"></i></span></div>
-        <div class="metric">꾸밈 <span class="mbar"><i style="width:80%"></i></span></div>
-        <div class="metric">무드 <span class="mbar"><i style="width:72%"></i></span></div>
-        <div class="metric">보완 <span class="mbar"><i style="width:90%"></i></span></div>
-        <div class="label">✨ 잘 맞는 포인트</div>
-        <div class="point">· 꾸밈 온도 차이가 크지 않음</div>
-        <div class="point">· 무채색/차분한 컬러 선호</div>
-        <div class="point">· 전시 와인바 데이트 적합</div>
-        <div class="label">⚠ 주의할 포인트</div>
-        <div class="point warn">· 실용적 스타일링 선호 시 의견 갈릴 수 있음</div>
-        <div class="btn">대화 시작하기</div>
-      </div>
-      <div class="caption"><b>케미 리포트</b><small>AI 분석 호환성 분석</small></div>
-    </div>
 
-    <!-- 07 채팅 -->
-    <div class="col">
-      <div class="step-no">0 7</div>
-      <div class="phone">
-        <div class="row" style="align-items:center; margin-bottom:14px">
-          <div style="width:30px;height:30px;border-radius:50%;background:radial-gradient(circle at 30% 30%,var(--grad1),var(--grad2))"></div>
-          <b style="font-size:13px">지윤</b>
-          <span class="chip" style="margin-left:auto">84% SYNC</span>
-        </div>
-        <div style="display:flex;flex-direction:column">
-          <div class="bubble them">안녕하세요! 스타일 결이 비슷한 것 같아요</div>
-          <div class="bubble me">맞아요 저도 느꼈어요! 미니멀 좋아하시는군요</div>
-          <div class="bubble them">전시에 관심이 있으신가요?</div>
-          <div class="ai-suggest">✨ AI 스타일 토크 제안<br/>둘 다 무채색 미니멀 스타일이에요. 지금 전시 얘기로 시작해보면 좋을 것 같아요.</div>
-          <div class="bubble me">전시 진짜 좋아해요. 요즘 뭐 보셨어요?</div>
-        </div>
-        <div class="input" style="margin-top:auto; display:flex; justify-content:space-between; align-items:center">
-          <span style="color:var(--muted)">메시지 입력...</span><span>→</span>
-        </div>
-      </div>
-      <div class="caption"><b>채팅</b><small>스타일 기반 대화 시작</small></div>
-    </div>
 
   </div>
+
+  <div class="footer">STYLE CHEMISTRY MVP · UX FLOW V6.0 · MERGED FINAL</div>
+</div>
 </body>
 </html>

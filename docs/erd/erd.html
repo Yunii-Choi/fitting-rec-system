@@ -1,161 +1,321 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>fitting — ERD</title>
-<style>
-  :root {
-    --bg: #0a0a0a;
-    --panel: #141414;
-    --line: #262626;
-    --lime: #d4ff3f;
-    --text: #f5f5f5;
-    --muted: #8a8a8a;
-  }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    background: var(--bg);
-    color: var(--text);
-    font-family: "Pretendard", -apple-system, BlinkMacSystemFont, sans-serif;
-    padding: 48px 32px 80px;
-  }
-  header { max-width: 1100px; margin: 0 auto 40px; }
-  .tag {
-    display: inline-block; font-size: 12px; letter-spacing: 2px;
-    color: var(--lime); border: 1px solid var(--lime);
-    padding: 4px 12px; border-radius: 20px; margin-bottom: 18px;
-  }
-  h1 { font-size: 34px; margin: 0 0 8px; font-weight: 800; }
-  h1 span { color: var(--lime); }
-  p.sub { color: var(--muted); margin: 0; font-size: 14px; }
-  .card {
-    max-width: 1100px; margin: 0 auto;
-    background: var(--panel); border: 1px solid var(--line);
-    border-radius: 16px; padding: 32px; overflow-x: auto;
-  }
-  .mermaid { display: flex; justify-content: center; }
-  footer { max-width: 1100px; margin: 32px auto 0; color: var(--muted); font-size: 12px; letter-spacing: 1px; }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OOTD 패션 데이팅 앱 — ERD (Full)</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #e8edf2;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      padding: 24px;
+    }
+    h1 { font-size: 16px; font-weight: 500; color: #1a2035; margin-bottom: 4px; }
+    p  { font-size: 12px; color: #718096; margin-bottom: 16px; }
+    .wrap {
+      overflow: auto;
+      background: #fff;
+      border-radius: 6px;
+      box-shadow: 0 1px 5px rgba(0,0,0,.14);
+      display: inline-block;
+    }
+    #cv { position: relative; width: 1520px; height: 700px; }
+    #sl {
+      position: absolute; top: 0; left: 0;
+      width: 1520px; height: 700px;
+      pointer-events: none; z-index: 1;
+    }
+    .t {
+      position: absolute;
+      border: 1px solid #aeccee;
+      border-radius: 3px;
+      overflow: hidden;
+      box-shadow: 2px 3px 8px rgba(0,0,0,.13);
+      z-index: 2;
+      background: #fff;
+      font-size: 12px;
+    }
+    .th {
+      background: #5291cc;
+      color: #fff;
+      font-weight: 600;
+      font-size: 12px;
+      padding: 0 9px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      white-space: nowrap;
+    }
+    .th::before {
+      content: '';
+      width: 13px; height: 13px;
+      background: rgba(255,255,255,.82);
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+    .th.master { background: #6b7c93; }
+    .th.junction { background: #7ba05b; }
+    .th.match { background: #c2567f; }
+
+    .tr {
+      display: flex;
+      align-items: center;
+      height: 24px;
+      padding: 0 6px;
+      border-top: 1px solid #dde8f5;
+      gap: 5px;
+    }
+    .tr:hover { background: #eef4fc; }
+    .ki {
+      width: 14px; height: 14px;
+      flex-shrink: 0;
+      border-radius: 2px;
+      font-size: 8px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .pk { background: #f5d000; color: #6b4c00; }
+    .fk { background: #e0612a; color: #fff; }
+    .no { background: transparent; }
+    .fn { color: #16213e; font-size: 12px; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ft { color: #8899aa; font-size: 11px; white-space: nowrap; margin-left: 4px; }
+
+    .legend {
+      margin-top: 14px;
+      display: flex;
+      gap: 16px;
+      font-size: 12px;
+      color: #555;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .leg-item { display: flex; align-items: center; gap: 5px; }
+    .leg-badge { width:14px; height:14px; border-radius:2px; font-size:8px; font-weight:700; display:flex; align-items:center; justify-content:center; }
+    .leg-color { width:14px; height:14px; border-radius:2px; }
+  </style>
 </head>
 <body>
-  <header>
-    <span class="tag">DATA MODEL</span>
-    <h1>fitting — <span>ERD</span></h1>
-    <p class="sub">OOTD 패션 데이팅 앱 · Style Chemistry MVP · v6</p>
-  </header>
-
-  <div class="card">
-    <pre class="mermaid">
-erDiagram
-    users ||--o{ ootd_photos : uploads
-    users ||--o{ style_profiles : has
-    users ||--o{ matches : "is user_a"
-    users ||--o{ messages : sends
-    style_profiles ||--o{ style_keywords : has
-    style_profiles ||--o{ color_palette : has
-    style_profiles ||--o{ date_moods : has
-    matches ||--|| chemistry_reports : produces
-    matches ||--|| chat_rooms : opens
-    chemistry_reports ||--o{ report_points : contains
-    chat_rooms ||--o{ messages : holds
-
-    users {
-        string id PK
-        string email
-        enum gender "MALE/FEMALE"
-        string nickname
-        int age
-        timestamp created_at
-    }
-    ootd_photos {
-        string id PK
-        string user_id FK
-        enum photo_type "DAILY/DATE/ME"
-        string storage_path
-        string image_url
-        timestamp uploaded_at
-    }
-    style_profiles {
-        string id PK
-        string user_id FK
-        string mood_title
-        float mood_score
-        float warmth_temp
-        text ai_comment
-        timestamp created_at
-    }
-    style_keywords {
-        string id PK
-        string style_profile_id FK
-        string keyword
-    }
-    color_palette {
-        string id PK
-        string style_profile_id FK
-        string hex_code
-        int sort_order
-    }
-    date_moods {
-        string id PK
-        string style_profile_id FK
-        string mood
-        bool selected
-    }
-    matches {
-        string id PK
-        string user_a_id FK
-        string user_b_id FK
-        int sync_score
-        enum status "PENDING/MATCHED/PASSED"
-        timestamp created_at
-    }
-    chemistry_reports {
-        string id PK
-        string match_id FK
-        int style_score
-        int decoration_score
-        int mood_score
-        int complement_score
-        timestamp created_at
-    }
-    report_points {
-        string id PK
-        string report_id FK
-        enum point_type "MATCH/WARNING"
-        text content
-    }
-    chat_rooms {
-        string id PK
-        string match_id FK
-        timestamp created_at
-    }
-    messages {
-        string id PK
-        string chat_room_id FK
-        string sender_id FK
-        text content
-        timestamp sent_at
-    }
-    </pre>
+  <h1>OOTD 패션 데이팅 앱 — Database ERD</h1>
+  <p>style-chemistry-mvp · 12 tables · UX FLOW V6 (5 screens)</p>
+  <div class="wrap">
+    <div id="cv">
+      <svg id="sl" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+  </div>
+  <div class="legend">
+    <span style="font-weight:500; color:#333">범례</span>
+    <span class="leg-item"><span class="leg-badge pk">PK</span> Primary Key</span>
+    <span class="leg-item"><span class="leg-badge fk">FK</span> Foreign Key</span>
+    <span class="leg-item"><span class="leg-color" style="background:#6b7c93"></span> 마스터</span>
+    <span class="leg-item"><span class="leg-color" style="background:#5291cc"></span> 사용자/분석</span>
+    <span class="leg-item"><span class="leg-color" style="background:#7ba05b"></span> 정션(N:M)</span>
+    <span class="leg-item"><span class="leg-color" style="background:#c2567f"></span> 매칭</span>
+    <span class="leg-item">
+      <svg width="40" height="14" style="overflow:visible">
+        <path d="M2,7 L38,7" fill="none" stroke="#4a85c1" stroke-width="1.5"/>
+        <path d="M4,1 L4,13 M9,1 L9,13" fill="none" stroke="#4a85c1" stroke-width="1.5"/>
+        <path d="M38,7 L26,1 M38,7 L26,7 M38,7 L26,13 M22,1 L22,13" fill="none" stroke="#4a85c1" stroke-width="1.5"/>
+      </svg>
+      1 : N
+    </span>
   </div>
 
-  <footer>STYLE CHEMISTRY MVP · ERD · fitting-524</footer>
+<script>
+const HDR=32, ROW=24, LINE='#4a85c1', ROSE='#c2567f';
 
-  <script type="module">
-    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
-    mermaid.initialize({
-      startOnLoad: true,
-      theme: "dark",
-      themeVariables: {
-        primaryColor: "#141414",
-        primaryBorderColor: "#d4ff3f",
-        lineColor: "#d4ff3f",
-        primaryTextColor: "#f5f5f5",
-        fontFamily: "Pretendard, sans-serif",
-      },
-    });
-  </script>
+const T = [
+  // ── 마스터 ──
+  { id:'outfit_categories', x:30, y:30, w:240, role:'master', fields:[
+    {n:'category_id',   t:'INT',          k:'pk'},
+    {n:'code',          t:'VARCHAR(16)',  k:''},
+    {n:'name',          t:'VARCHAR(32)',  k:''},
+    {n:'is_required',   t:'BOOLEAN',      k:''},
+    {n:'display_order', t:'INT',          k:''},
+  ]},
+  { id:'style_archetypes', x:30, y:240, w:240, role:'master', fields:[
+    {n:'archetype_id',   t:'INT',         k:'pk'},
+    {n:'gender',         t:'VARCHAR(8)',  k:''},
+    {n:'archetype_name', t:'VARCHAR(64)', k:''},
+  ]},
+  { id:'style_keywords', x:1240, y:30, w:240, role:'master', fields:[
+    {n:'keyword_id',    t:'INT',          k:'pk'},
+    {n:'keyword',       t:'VARCHAR(32)',  k:''},
+  ]},
+  { id:'date_moods', x:1240, y:210, w:240, role:'master', fields:[
+    {n:'mood_id',       t:'INT',          k:'pk'},
+    {n:'mood_name',     t:'VARCHAR(32)',  k:''},
+    {n:'icon',          t:'VARCHAR(8)',   k:''},
+  ]},
+
+  // ── 사용자/OOTD ──
+  { id:'users', x:330, y:30, w:240, role:'core', fields:[
+    {n:'user_id',       t:'INT',          k:'pk'},
+    {n:'nickname',      t:'VARCHAR(32)',  k:''},
+    {n:'gender',        t:'VARCHAR(8)',   k:''},
+    {n:'age',           t:'INT',          k:''},
+    {n:'created_at',    t:'TIMESTAMP',    k:''},
+  ]},
+  { id:'user_outfits', x:330, y:240, w:240, role:'core', fields:[
+    {n:'outfit_id',     t:'INT',          k:'pk'},
+    {n:'user_id',       t:'INT',          k:'fk'},
+    {n:'category_id',   t:'INT',          k:'fk'},
+    {n:'image_url',     t:'TEXT',         k:''},
+    {n:'uploaded_at',   t:'TIMESTAMP',    k:''},
+  ]},
+
+  // ── 스타일 분석 ──
+  { id:'style_profiles', x:640, y:30, w:260, role:'core', fields:[
+    {n:'profile_id',    t:'INT',          k:'pk'},
+    {n:'user_id',       t:'INT',          k:'fk'},
+    {n:'archetype_id',  t:'INT',          k:'fk'},
+    {n:'style_temp',    t:'INT',          k:''},
+    {n:'description',   t:'TEXT',         k:''},
+    {n:'generated_at',  t:'TIMESTAMP',    k:''},
+  ]},
+  { id:'profile_colors', x:640, y:270, w:260, role:'core', fields:[
+    {n:'color_id',      t:'INT',          k:'pk'},
+    {n:'profile_id',    t:'INT',          k:'fk'},
+    {n:'hex_code',      t:'VARCHAR(7)',   k:''},
+    {n:'display_order', t:'INT',          k:''},
+  ]},
+
+  // ── 정션(N:M) ──
+  { id:'profile_keywords', x:970, y:30, w:240, role:'junction', fields:[
+    {n:'profile_id',    t:'INT',          k:'fk'},
+    {n:'keyword_id',    t:'INT',          k:'fk'},
+  ]},
+  { id:'profile_date_moods', x:970, y:210, w:240, role:'junction', fields:[
+    {n:'profile_id',    t:'INT',          k:'fk'},
+    {n:'mood_id',       t:'INT',          k:'fk'},
+  ]},
+
+  // ── 매칭 ──
+  { id:'user_likes', x:330, y:480, w:260, role:'match', fields:[
+    {n:'like_id',           t:'INT',         k:'pk'},
+    {n:'user_id',           t:'INT',         k:'fk'},
+    {n:'candidate_user_id', t:'INT',         k:'fk'},
+    {n:'sync_score',        t:'INT',         k:''},
+    {n:'action',            t:'VARCHAR(8)',  k:''},
+    {n:'created_at',        t:'TIMESTAMP',   k:''},
+  ]},
+  { id:'matches', x:660, y:480, w:240, role:'match', fields:[
+    {n:'match_id',      t:'INT',          k:'pk'},
+    {n:'user1_id',      t:'INT',          k:'fk'},
+    {n:'user2_id',      t:'INT',          k:'fk'},
+    {n:'sync_score',    t:'INT',          k:''},
+    {n:'matched_at',    t:'TIMESTAMP',    k:''},
+  ]},
+];
+
+const cv = document.getElementById('cv');
+T.forEach(tb => {
+  const d = document.createElement('div');
+  d.className = 't';
+  d.style.cssText = `left:${tb.x}px;top:${tb.y}px;width:${tb.w}px;`;
+  const thClass = tb.role === 'master' ? 'th master'
+                : tb.role === 'junction' ? 'th junction'
+                : tb.role === 'match' ? 'th match'
+                : 'th';
+  let h = `<div class="${thClass}">${tb.id}</div>`;
+  tb.fields.forEach(f => {
+    const kc = f.k==='pk'?'pk':f.k==='fk'?'fk':'no';
+    const kt = f.k==='pk'?'PK':f.k==='fk'?'FK':'';
+    h += `<div class="tr"><span class="ki ${kc}">${kt}</span><span class="fn">${f.n}</span><span class="ft">${f.t}</span></div>`;
+  });
+  d.innerHTML = h;
+  cv.appendChild(d);
+});
+
+const sl = document.getElementById('sl');
+const TB = Object.fromEntries(T.map(t => [t.id, t]));
+const ry = (tb, i) => tb.y + HDR + i*ROW + ROW/2;
+const rx = (tb, s) => s==='r' ? tb.x+tb.w : tb.x;
+
+function pth(d, color) {
+  const p = document.createElementNS('http://www.w3.org/2000/svg','path');
+  p.setAttribute('d', d);
+  p.setAttribute('fill','none');
+  p.setAttribute('stroke', color || LINE);
+  p.setAttribute('stroke-width','1.5');
+  p.setAttribute('stroke-linejoin','round');
+  sl.appendChild(p);
+}
+// crow's foot ("many")
+function cf(x,y,dir,color) {
+  const d=12, s=6, b=4;
+  if(dir==='r') pth(`M${x},${y} L${x+d},${y-s} M${x},${y} L${x+d},${y} M${x},${y} L${x+d},${y+s} M${x+d+b},${y-7} L${x+d+b},${y+7}`, color);
+  if(dir==='l') pth(`M${x},${y} L${x-d},${y-s} M${x},${y} L${x-d},${y} M${x},${y} L${x-d},${y+s} M${x-d-b},${y-7} L${x-d-b},${y+7}`, color);
+  if(dir==='d') pth(`M${x},${y} L${x-s},${y+d} M${x},${y} L${x},${y+d} M${x},${y} L${x+s},${y+d} M${x-7},${y+d+b} L${x+7},${y+d+b}`, color);
+}
+// "one" double-bar
+function om(x,y,dir,color) {
+  if(dir==='r') pth(`M${x},${y-7} L${x},${y+7} M${x+5},${y-7} L${x+5},${y+7}`, color);
+  if(dir==='l') pth(`M${x},${y-7} L${x},${y+7} M${x-5},${y-7} L${x-5},${y+7}`, color);
+}
+
+const us=TB.users, uo=TB.user_outfits, oc=TB.outfit_categories,
+      sa=TB.style_archetypes, sp=TB.style_profiles, pc=TB.profile_colors,
+      pk=TB.profile_keywords, pdm=TB.profile_date_moods,
+      sk=TB.style_keywords, dm=TB.date_moods,
+      ul=TB.user_likes, mt=TB.matches;
+
+// 1. users.user_id → user_outfits.user_id
+pth(`M${rx(us,'l')},${ry(us,0)} L312,${ry(us,0)} L312,${ry(uo,1)} L${rx(uo,'l')},${ry(uo,1)}`);
+om(rx(us,'l'), ry(us,0), 'l');  cf(rx(uo,'l'), ry(uo,1), 'l');
+
+// 2. outfit_categories.category_id → user_outfits.category_id
+pth(`M${rx(oc,'r')},${ry(oc,0)} L300,${ry(oc,0)} L300,${ry(uo,2)} L${rx(uo,'l')},${ry(uo,2)}`);
+om(rx(oc,'r'), ry(oc,0), 'r');  cf(rx(uo,'l'), ry(uo,2), 'l');
+
+// 3. users.user_id → style_profiles.user_id
+pth(`M${rx(us,'r')},${ry(us,0)} L605,${ry(us,0)} L605,${ry(sp,1)} L${rx(sp,'l')},${ry(sp,1)}`);
+om(rx(us,'r'), ry(us,0), 'r');  cf(rx(sp,'l'), ry(sp,1), 'l');
+
+// 4. style_archetypes.archetype_id → style_profiles.archetype_id
+pth(`M${rx(sa,'r')},${ry(sa,0)} L295,${ry(sa,0)} L295,210 L618,210 L618,${ry(sp,2)} L${rx(sp,'l')},${ry(sp,2)}`);
+om(rx(sa,'r'), ry(sa,0), 'r');  cf(rx(sp,'l'), ry(sp,2), 'l');
+
+// 5. style_profiles.profile_id → profile_keywords.profile_id
+pth(`M${rx(sp,'r')},${ry(sp,0)} L${rx(pk,'l')},${ry(pk,0)}`);
+om(rx(sp,'r'), ry(sp,0), 'r');  cf(rx(pk,'l'), ry(pk,0), 'l');
+
+// 6. style_keywords.keyword_id → profile_keywords.keyword_id
+pth(`M${rx(sk,'l')},${ry(sk,0)} L1225,${ry(sk,0)} L1225,${ry(pk,1)} L${rx(pk,'r')},${ry(pk,1)}`);
+om(rx(sk,'l'), ry(sk,0), 'l');  cf(rx(pk,'r'), ry(pk,1), 'r');
+
+// 7. style_profiles.profile_id → profile_colors.profile_id
+pth(`M${rx(sp,'r')},${ry(sp,0)+3} L925,${ry(sp,0)+3} L925,${ry(pc,1)} L${rx(pc,'r')},${ry(pc,1)}`);
+om(rx(sp,'r'), ry(sp,0)+3, 'r');  cf(rx(pc,'r'), ry(pc,1), 'r');
+
+// 8. style_profiles.profile_id → profile_date_moods.profile_id
+pth(`M${rx(sp,'r')},${ry(sp,0)-3} L940,${ry(sp,0)-3} L940,${ry(pdm,0)} L${rx(pdm,'l')},${ry(pdm,0)}`);
+om(rx(sp,'r'), ry(sp,0)-3, 'r');  cf(rx(pdm,'l'), ry(pdm,0), 'l');
+
+// 9. date_moods.mood_id → profile_date_moods.mood_id
+pth(`M${rx(dm,'l')},${ry(dm,0)} L1225,${ry(dm,0)} L1225,${ry(pdm,1)} L${rx(pdm,'r')},${ry(pdm,1)}`);
+om(rx(dm,'l'), ry(dm,0), 'l');  cf(rx(pdm,'r'), ry(pdm,1), 'r');
+
+// ── 매칭 관계선 (로즈) ──
+
+// 10. users.user_id → user_likes.user_id
+pth(`M${rx(us,'l')},${ry(us,0)-4} L306,${ry(us,0)-4} L306,${ry(ul,1)} L${rx(ul,'l')},${ry(ul,1)}`, ROSE);
+om(rx(us,'l'), ry(us,0)-4, 'l', ROSE);  cf(rx(ul,'l'), ry(ul,1), 'l', ROSE);
+
+// 11. users.user_id → user_likes.candidate_user_id
+pth(`M${rx(us,'l')},${ry(us,0)-8} L294,${ry(us,0)-8} L294,${ry(ul,2)} L${rx(ul,'l')},${ry(ul,2)}`, ROSE);
+om(rx(us,'l'), ry(us,0)-8, 'l', ROSE);  cf(rx(ul,'l'), ry(ul,2), 'l', ROSE);
+
+// 12. users.user_id → matches.user1_id
+pth(`M${rx(us,'r')},${ry(us,0)-4} L612,${ry(us,0)-4} L612,${ry(mt,1)} L${rx(mt,'l')},${ry(mt,1)}`, ROSE);
+om(rx(us,'r'), ry(us,0)-4, 'r', ROSE);  cf(rx(mt,'l'), ry(mt,1), 'l', ROSE);
+
+// 13. users.user_id → matches.user2_id
+pth(`M${rx(us,'r')},${ry(us,0)-8} L624,${ry(us,0)-8} L624,${ry(mt,2)} L${rx(mt,'l')},${ry(mt,2)}`, ROSE);
+om(rx(us,'r'), ry(us,0)-8, 'r', ROSE);  cf(rx(mt,'l'), ry(mt,2), 'l', ROSE);
+</script>
 </body>
 </html>
