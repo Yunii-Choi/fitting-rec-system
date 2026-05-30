@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>fitting — ERD</title>
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --panel: #141414;
+    --line: #262626;
+    --lime: #d4ff3f;
+    --text: #f5f5f5;
+    --muted: #8a8a8a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Pretendard", -apple-system, BlinkMacSystemFont, sans-serif;
+    padding: 48px 32px 80px;
+  }
+  header { max-width: 1100px; margin: 0 auto 40px; }
+  .tag {
+    display: inline-block; font-size: 12px; letter-spacing: 2px;
+    color: var(--lime); border: 1px solid var(--lime);
+    padding: 4px 12px; border-radius: 20px; margin-bottom: 18px;
+  }
+  h1 { font-size: 34px; margin: 0 0 8px; font-weight: 800; }
+  h1 span { color: var(--lime); }
+  p.sub { color: var(--muted); margin: 0; font-size: 14px; }
+  .card {
+    max-width: 1100px; margin: 0 auto;
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 16px; padding: 32px; overflow-x: auto;
+  }
+  .mermaid { display: flex; justify-content: center; }
+  footer { max-width: 1100px; margin: 32px auto 0; color: var(--muted); font-size: 12px; letter-spacing: 1px; }
+</style>
+</head>
+<body>
+  <header>
+    <span class="tag">DATA MODEL</span>
+    <h1>fitting — <span>ERD</span></h1>
+    <p class="sub">OOTD 패션 데이팅 앱 · Style Chemistry MVP · v6</p>
+  </header>
+
+  <div class="card">
+    <pre class="mermaid">
+erDiagram
+    users ||--o{ ootd_photos : uploads
+    users ||--o{ style_profiles : has
+    users ||--o{ matches : "is user_a"
+    users ||--o{ messages : sends
+    style_profiles ||--o{ style_keywords : has
+    style_profiles ||--o{ color_palette : has
+    style_profiles ||--o{ date_moods : has
+    matches ||--|| chemistry_reports : produces
+    matches ||--|| chat_rooms : opens
+    chemistry_reports ||--o{ report_points : contains
+    chat_rooms ||--o{ messages : holds
+
+    users {
+        string id PK
+        string email
+        enum gender "MALE/FEMALE"
+        string nickname
+        int age
+        timestamp created_at
+    }
+    ootd_photos {
+        string id PK
+        string user_id FK
+        enum photo_type "DAILY/DATE/ME"
+        string storage_path
+        string image_url
+        timestamp uploaded_at
+    }
+    style_profiles {
+        string id PK
+        string user_id FK
+        string mood_title
+        float mood_score
+        float warmth_temp
+        text ai_comment
+        timestamp created_at
+    }
+    style_keywords {
+        string id PK
+        string style_profile_id FK
+        string keyword
+    }
+    color_palette {
+        string id PK
+        string style_profile_id FK
+        string hex_code
+        int sort_order
+    }
+    date_moods {
+        string id PK
+        string style_profile_id FK
+        string mood
+        bool selected
+    }
+    matches {
+        string id PK
+        string user_a_id FK
+        string user_b_id FK
+        int sync_score
+        enum status "PENDING/MATCHED/PASSED"
+        timestamp created_at
+    }
+    chemistry_reports {
+        string id PK
+        string match_id FK
+        int style_score
+        int decoration_score
+        int mood_score
+        int complement_score
+        timestamp created_at
+    }
+    report_points {
+        string id PK
+        string report_id FK
+        enum point_type "MATCH/WARNING"
+        text content
+    }
+    chat_rooms {
+        string id PK
+        string match_id FK
+        timestamp created_at
+    }
+    messages {
+        string id PK
+        string chat_room_id FK
+        string sender_id FK
+        text content
+        timestamp sent_at
+    }
+    </pre>
+  </div>
+
+  <footer>STYLE CHEMISTRY MVP · ERD · fitting-524</footer>
+
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: "dark",
+      themeVariables: {
+        primaryColor: "#141414",
+        primaryBorderColor: "#d4ff3f",
+        lineColor: "#d4ff3f",
+        primaryTextColor: "#f5f5f5",
+        fontFamily: "Pretendard, sans-serif",
+      },
+    });
+  </script>
+</body>
+</html>
