@@ -1,0 +1,444 @@
+{
+  "source": "style-keywords.xlsx :: 스타일 닉네임 (30) :: 대표 키워드 1~4",
+  "note": "raw tokens only — no synonym merging yet. Review pending.",
+  "total_tokens": 120,
+  "unique_tokens": 109,
+  "frequencies": [
+    {
+      "keyword": "깔끔",
+      "count": 3
+    },
+    {
+      "keyword": "내추럴",
+      "count": 2
+    },
+    {
+      "keyword": "단정함",
+      "count": 2
+    },
+    {
+      "keyword": "데일리",
+      "count": 2
+    },
+    {
+      "keyword": "레트로",
+      "count": 2
+    },
+    {
+      "keyword": "미니멀",
+      "count": 2
+    },
+    {
+      "keyword": "믹스매치",
+      "count": 2
+    },
+    {
+      "keyword": "빈티지",
+      "count": 2
+    },
+    {
+      "keyword": "오버핏",
+      "count": 2
+    },
+    {
+      "keyword": "클래식",
+      "count": 2
+    },
+    {
+      "keyword": "개성",
+      "count": 1
+    },
+    {
+      "keyword": "걸크러시",
+      "count": 1
+    },
+    {
+      "keyword": "그래픽",
+      "count": 1
+    },
+    {
+      "keyword": "그런지",
+      "count": 1
+    },
+    {
+      "keyword": "기능성",
+      "count": 1
+    },
+    {
+      "keyword": "뉴트럴",
+      "count": 1
+    },
+    {
+      "keyword": "니트",
+      "count": 1
+    },
+    {
+      "keyword": "니트조끼",
+      "count": 1
+    },
+    {
+      "keyword": "대담",
+      "count": 1
+    },
+    {
+      "keyword": "따뜻함",
+      "count": 1
+    },
+    {
+      "keyword": "라운지",
+      "count": 1
+    },
+    {
+      "keyword": "럭셔리스트릿",
+      "count": 1
+    },
+    {
+      "keyword": "레이스",
+      "count": 1
+    },
+    {
+      "keyword": "레이어드",
+      "count": 1
+    },
+    {
+      "keyword": "로고",
+      "count": 1
+    },
+    {
+      "keyword": "루즈핏",
+      "count": 1
+    },
+    {
+      "keyword": "리조트",
+      "count": 1
+    },
+    {
+      "keyword": "모노톤",
+      "count": 1
+    },
+    {
+      "keyword": "모던",
+      "count": 1
+    },
+    {
+      "keyword": "모던캐주얼",
+      "count": 1
+    },
+    {
+      "keyword": "무난",
+      "count": 1
+    },
+    {
+      "keyword": "무채색",
+      "count": 1
+    },
+    {
+      "keyword": "미래적",
+      "count": 1
+    },
+    {
+      "keyword": "베레모",
+      "count": 1
+    },
+    {
+      "keyword": "베이직",
+      "count": 1
+    },
+    {
+      "keyword": "보헤미안",
+      "count": 1
+    },
+    {
+      "keyword": "볼드",
+      "count": 1
+    },
+    {
+      "keyword": "볼드컬러",
+      "count": 1
+    },
+    {
+      "keyword": "부드러움",
+      "count": 1
+    },
+    {
+      "keyword": "브랜드믹스",
+      "count": 1
+    },
+    {
+      "keyword": "블랙",
+      "count": 1
+    },
+    {
+      "keyword": "블랙&화이트",
+      "count": 1
+    },
+    {
+      "keyword": "블루그레이",
+      "count": 1
+    },
+    {
+      "keyword": "비비드",
+      "count": 1
+    },
+    {
+      "keyword": "비즈캐주얼",
+      "count": 1
+    },
+    {
+      "keyword": "서핑",
+      "count": 1
+    },
+    {
+      "keyword": "세련됨",
+      "count": 1
+    },
+    {
+      "keyword": "셔츠",
+      "count": 1
+    },
+    {
+      "keyword": "숏컷",
+      "count": 1
+    },
+    {
+      "keyword": "수트",
+      "count": 1
+    },
+    {
+      "keyword": "스케이트",
+      "count": 1
+    },
+    {
+      "keyword": "스트라이프",
+      "count": 1
+    },
+    {
+      "keyword": "스트릿",
+      "count": 1
+    },
+    {
+      "keyword": "스포츠믹스",
+      "count": 1
+    },
+    {
+      "keyword": "슬랙스",
+      "count": 1
+    },
+    {
+      "keyword": "슬림핏",
+      "count": 1
+    },
+    {
+      "keyword": "시크",
+      "count": 1
+    },
+    {
+      "keyword": "시티무드",
+      "count": 1
+    },
+    {
+      "keyword": "신뢰감",
+      "count": 1
+    },
+    {
+      "keyword": "실루엣",
+      "count": 1
+    },
+    {
+      "keyword": "실험적",
+      "count": 1
+    },
+    {
+      "keyword": "심플",
+      "count": 1
+    },
+    {
+      "keyword": "썸머바이브",
+      "count": 1
+    },
+    {
+      "keyword": "아방가르드",
+      "count": 1
+    },
+    {
+      "keyword": "악세서리",
+      "count": 1
+    },
+    {
+      "keyword": "액세서리",
+      "count": 1
+    },
+    {
+      "keyword": "어스톤",
+      "count": 1
+    },
+    {
+      "keyword": "에너지",
+      "count": 1
+    },
+    {
+      "keyword": "에포트리스",
+      "count": 1
+    },
+    {
+      "keyword": "여성스러움",
+      "count": 1
+    },
+    {
+      "keyword": "여유로움",
+      "count": 1
+    },
+    {
+      "keyword": "오가닉",
+      "count": 1
+    },
+    {
+      "keyword": "오피스룩",
+      "count": 1
+    },
+    {
+      "keyword": "올드스쿨",
+      "count": 1
+    },
+    {
+      "keyword": "올블랙",
+      "count": 1
+    },
+    {
+      "keyword": "워크웨어",
+      "count": 1
+    },
+    {
+      "keyword": "원피스",
+      "count": 1
+    },
+    {
+      "keyword": "자연스러움",
+      "count": 1
+    },
+    {
+      "keyword": "자유로움",
+      "count": 1
+    },
+    {
+      "keyword": "절제",
+      "count": 1
+    },
+    {
+      "keyword": "절제미",
+      "count": 1
+    },
+    {
+      "keyword": "정장감",
+      "count": 1
+    },
+    {
+      "keyword": "젠더리스",
+      "count": 1
+    },
+    {
+      "keyword": "질감",
+      "count": 1
+    },
+    {
+      "keyword": "차가운톤",
+      "count": 1
+    },
+    {
+      "keyword": "차분함",
+      "count": 1
+    },
+    {
+      "keyword": "체크",
+      "count": 1
+    },
+    {
+      "keyword": "캐주얼",
+      "count": 1
+    },
+    {
+      "keyword": "캠퍼스",
+      "count": 1
+    },
+    {
+      "keyword": "컬러",
+      "count": 1
+    },
+    {
+      "keyword": "컬러블록",
+      "count": 1
+    },
+    {
+      "keyword": "컬러풀",
+      "count": 1
+    },
+    {
+      "keyword": "테크웨어",
+      "count": 1
+    },
+    {
+      "keyword": "트렌드",
+      "count": 1
+    },
+    {
+      "keyword": "파워풀",
+      "count": 1
+    },
+    {
+      "keyword": "패턴",
+      "count": 1
+    },
+    {
+      "keyword": "패턴믹스",
+      "count": 1
+    },
+    {
+      "keyword": "펀",
+      "count": 1
+    },
+    {
+      "keyword": "페미닌",
+      "count": 1
+    },
+    {
+      "keyword": "편안함",
+      "count": 1
+    },
+    {
+      "keyword": "포멀",
+      "count": 1
+    },
+    {
+      "keyword": "프레피",
+      "count": 1
+    },
+    {
+      "keyword": "프렌치",
+      "count": 1
+    },
+    {
+      "keyword": "프릴",
+      "count": 1
+    },
+    {
+      "keyword": "플로럴",
+      "count": 1
+    },
+    {
+      "keyword": "핑크",
+      "count": 1
+    },
+    {
+      "keyword": "하이탑",
+      "count": 1
+    },
+    {
+      "keyword": "화려함",
+      "count": 1
+    },
+    {
+      "keyword": "활동적",
+      "count": 1
+    }
+  ]
+}
