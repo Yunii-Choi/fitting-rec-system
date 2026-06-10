@@ -2,12 +2,15 @@ import { useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useMatchStore } from '@/stores/matchStore'
 import { useProfileStore } from '@/stores/profileStore'
+import { useAuthStore } from '@/stores/authStore'
 import MatchCard from '@/components/match/MatchCard'
 import { getMatches } from '@/lib/api'
+import { saveLikeAction, checkMutualLike } from '@/lib/firestore'
 
 export default function MatchListPage() {
   const { matches, currentIndex, loading, matchSuccess, setMatches, setLoading, nextMatch, setMatchSuccess } = useMatchStore()
   const styleProfile = useProfileStore((s) => s.styleProfile)
+  const user = useAuthStore((s) => s.user)
 
   useEffect(() => {
     const load = async () => {
@@ -24,16 +27,27 @@ export default function MatchListPage() {
     if (styleProfile) load()
   }, [styleProfile])
 
-  const handleLike = () => {
-    // For MVP, simulate mutual match on random chance
-    if (Math.random() > 0.6) {
+  const handleLike = async () => {
+    const current = matches[currentIndex]
+    if (!current || !user) return
+
+    // Firestore에 좋아요 저장
+    await saveLikeAction(user.uid, current.partnerId, 'like')
+
+    // 상호 매칭 체크
+    const mutual = await checkMutualLike(user.uid, current.partnerId)
+    if (mutual) {
       setMatchSuccess(true)
       setTimeout(() => setMatchSuccess(false), 3000)
     }
     nextMatch()
   }
 
-  const handlePass = () => {
+  const handlePass = async () => {
+    const current = matches[currentIndex]
+    if (current && user) {
+      await saveLikeAction(user.uid, current.partnerId, 'pass')
+    }
     nextMatch()
   }
 

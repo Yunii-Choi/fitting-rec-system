@@ -3,8 +3,11 @@ import type { Gender } from '@/types/user'
 import type { StyleProfile } from '@/types/style'
 import type { Match } from '@/types/match'
 import { ARCHETYPES, DATE_MOODS } from '@/lib/masterData'
-import { computeMatchScores } from '@/lib/matching'
+import { VOCABULARY } from '@/data/keywordIndex'
+import { computeMatchScores, type CandidateProfile } from '@/lib/matching'
+import { getAllStyleProfiles, getUserProfiles } from '@/lib/firestore'
 import { FAKE_PROFILES } from '@/lib/fakeProfiles'
+import { getArchetypeImageUrls } from '@/lib/driveImages'
 
 const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY || '')
 
@@ -35,33 +38,126 @@ async function fileToGenerativePart(file: File) {
   })
 }
 
+// ── 아키타입 레지스트리 (프롬프트용) ────────────────────────────────────
+
+const ARCHETYPE_REGISTRY = ARCHETYPES.map((a) =>
+  `${a.id}|${a.name}|${a.category}|${a.tempRange.min}-${a.tempRange.max}`
+).join('\n')
+
+// ── 통제 어휘 (프롬프트용) ──────────────────────────────────────────────
+
+const VOCAB_BLOCK = Object.entries(VOCABULARY)
+  .map(([facet, terms]) => `  ${facet}: [${terms.join(', ')}]`)
+  .join('\n')
+
+// ── 데이트 무드 목록 ────────────────────────────────────────────────────
+
+const MOOD_NAMES = DATE_MOODS.map((m) => m.name).join(', ')
+
+// ── 프롬프트 빌더 ──────────────────────────────────────────────────────
+
+function buildPrompt(imageCount: number, gender: Gender): string {
+  return `You are a fashion style analyst for a dating app called "fitting".
+You will receive ${imageCount} OOTD (Outfit of the Day) photo(s) uploaded by a user (gender: ${gender === 'M' ? 'male' : 'female'}).
+
+Your task: analyze the outfit(s) and produce a structured style profile.
+
+═══ STEP 1: ARCHETYPE CLASSIFICATION ═══
+
+Choose the single best-matching archetype from the registry below.
+Each row: id|name|category|tempRange
+
+${ARCHETYPE_REGISTRY}
+
+Rules:
+- Pick the archetype whose visual style most closely matches the outfit(s).
+- Gender-specific archetypes (id 1: male, id 2/24/25: female) — respect the user's gender.
+- If multiple photos are provided, choose the archetype that best represents the overall style.
+
+═══ STEP 2: STYLE KEYWORDS (CONTROLLED VOCABULARY) ═══
+
+Select 5-8 keywords ONLY from the lists below. Each keyword belongs to a facet.
+You MUST pick at least one from "genre" and one from "vibe".
+
+${VOCAB_BLOCK}
+
+Rules:
+- ONLY use exact terms from the lists above. No synonyms, no free-text.
+- Pick keywords that describe what you actually SEE in the photo(s).
+- Spread across facets — don't cluster all keywords in one facet.
+
+═══ STEP 3: STYLE TEMPERATURE ═══
+
+Rate the decoration effort on a 0-100 scale:
+- 0 = zero effort (pajamas, no coordination)
+- 50 = average daily wear
+- 100 = fully styled (layered, accessorized, color-coordinated)
+
+IMPORTANT: Your score MUST fall within the archetype's tempRange (see registry above).
+If the outfit seems outside the range, clamp to the nearest boundary.
+
+═══ STEP 4: COLOR PALETTE ═══
+
+Extract the 4 most dominant clothing colors as hex codes (#RRGGBB).
+- Only colors from the CLOTHES — ignore skin, hair, background.
+- Order from most dominant to least dominant.
+- Use accurate hex values based on what you see.
+
+═══ STEP 5: DATE MOODS ═══
+
+Select 3-5 date activities that match this style, from this list ONLY:
+${MOOD_NAMES}
+
+═══ STEP 6: DESCRIPTION ═══
+
+Write a one-sentence style description in casual Korean (20-50 characters).
+Capture the vibe, not a literal description of clothes.
+
+═══ OUTPUT FORMAT ═══
+
+Respond with ONLY a JSON object (no markdown, no explanation):
+{
+  "archetypeId": <number>,
+  "archetypeName": "<string>",
+  "archetypeCategory": "<string>",
+  "styleTemp": <number>,
+  "keywords": ["<string>", ...],
+  "colorPalette": ["#RRGGBB", ...],
+  "dateMoods": ["<string>", ...],
+  "description": "<string in Korean>"
+}`
+}
+
+// ── 메인 분석 함수 ─────────────────────────────────────────────────────
+
 export async function analyzeStyle(input: AnalyzeInput): Promise<StyleProfile> {
   const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
 
   // Prepare images
   const imageParts = []
-  if (input.daily) imageParts.push(await fileToGenerativePart(input.daily))
-  if (input.date) imageParts.push(await fileToGenerativePart(input.date))
-  if (input.mystyle) imageParts.push(await fileToGenerativePart(input.mystyle))
+  const labels: string[] = []
+  if (input.daily) {
+    imageParts.push(await fileToGenerativePart(input.daily))
+    labels.push('Daily Look')
+  }
+  if (input.date) {
+    imageParts.push(await fileToGenerativePart(input.date))
+    labels.push('Date Look')
+  }
+  if (input.mystyle) {
+    imageParts.push(await fileToGenerativePart(input.mystyle))
+    labels.push('My Style')
+  }
 
-  const archetypeNames = ARCHETYPES.map((a) => a.name).join(', ')
-  const moodNames = DATE_MOODS.map((m) => m.name).join(', ')
+  if (imageParts.length === 0) {
+    throw new Error('최소 1장의 OOTD 사진이 필요합니다')
+  }
 
-  const prompt = `당신은 패션 스타일 분석 전문가입니다. 업로드된 OOTD 사진을 분석하여 아래 JSON 형식으로 정확히 응답하세요.
-반드시 아래 목록에서만 선택해야 합니다.
+  const imageLabel = labels.length > 1
+    ? `\n\nThe ${labels.length} photos below are labeled: ${labels.join(', ')}. Analyze them holistically as one person's style.`
+    : ''
 
-[사용 가능한 스타일 아키타입]: ${archetypeNames}
-[사용 가능한 데이트 무드]: ${moodNames}
-
-분석 기준:
-- styleTemp: 꾸밈 정도 (0=노력 없음, 100=완벽하게 꾸밈). 옷의 핏, 레이어링, 소품, 컬러 코디 ��을 종합 판단.
-- keywords: 해당 아키타입의 대표 키워드 4개
-- colorPalette: 착장에서 보이는 주요 컬러 4개 (hex code)
-- dateMoods: 이 스타일과 어울리는 데이트 장소/활동 3~4개
-- description: 이 사람의 패션 스타일을 설명하는 한 문장 (캐주얼한 한국어, 20자~50자)
-
-JSON만 응답��세요 (마크다운 코드블록 없이):
-{"archetypeName": "string", "archetypeCategory": "string", "styleTemp": number, "keywords": ["string"], "colorPalette": ["#hex"], "dateMoods": ["string"], "description": "string"}`
+  const prompt = buildPrompt(imageParts.length, input.gender) + imageLabel
 
   const result = await model.generateContent([prompt, ...imageParts])
   const text = result.response.text()
@@ -72,21 +168,76 @@ JSON만 응답��세요 (마크다운 코드블록 없이):
 
   const parsed = JSON.parse(jsonMatch[0])
 
+  // Validate archetypeId
+  const archId = Number(parsed.archetypeId)
+  const archetype = ARCHETYPES.find((a) => a.id === String(archId))
+  if (!archetype) {
+    throw new Error(`유효하지 않은 아키타입 ID: ${parsed.archetypeId}`)
+  }
+
+  // Clamp styleTemp to archetype range
+  const clampedTemp = Math.max(
+    archetype.tempRange.min,
+    Math.min(archetype.tempRange.max, Number(parsed.styleTemp))
+  )
+
   return {
     userId: '',
-    archetypeName: parsed.archetypeName,
-    archetypeCategory: parsed.archetypeCategory,
-    styleTemp: parsed.styleTemp,
-    keywords: parsed.keywords,
-    colorPalette: parsed.colorPalette,
-    dateMoods: parsed.dateMoods,
-    description: parsed.description,
+    archetypeId: archId,
+    archetypeName: archetype.name,
+    archetypeCategory: archetype.category,
+    styleTemp: clampedTemp,
+    keywords: Array.isArray(parsed.keywords) ? parsed.keywords : [],
+    colorPalette: Array.isArray(parsed.colorPalette) ? parsed.colorPalette.slice(0, 4) : [],
+    dateMoods: Array.isArray(parsed.dateMoods) ? parsed.dateMoods : [],
+    description: parsed.description || '',
     generatedAt: new Date(),
   }
 }
 
 export async function getMatches(myProfile: StyleProfile): Promise<Match[]> {
-  // For MVP: use fake profiles and compute scores client-side
-  const scored = computeMatchScores(myProfile, FAKE_PROFILES)
+  const candidates: CandidateProfile[] = []
+
+  // 1) Firestore 실사용자 프로필 조회
+  try {
+    const firestoreProfiles = await getAllStyleProfiles(myProfile.userId)
+    if (firestoreProfiles.length > 0) {
+      // 유저 정보 (닉네임, 나이) 일괄 조회
+      const userIds = firestoreProfiles.map((p) => p.id)
+      const userMap = await getUserProfiles(userIds)
+
+      for (const sp of firestoreProfiles) {
+        const user = userMap.get(sp.id)
+        candidates.push({
+          id: sp.id,
+          nickname: user?.nickname ?? '익명',
+          age: user?.age ?? 0,
+          archetypeId: sp.archetypeId,
+          archetypeName: sp.archetypeName,
+          archetypeCategory: sp.archetypeCategory,
+          styleTemp: sp.styleTemp,
+          keywords: sp.keywords,
+          colorPalette: sp.colorPalette,
+          dateMoods: sp.dateMoods,
+          outfitUrls: user?.outfitUrls ?? getArchetypeImageUrls(String(sp.archetypeId ?? '1')),
+          description: sp.description,
+        })
+      }
+    }
+  } catch (err) {
+    console.warn('[getMatches] Firestore 조회 실패, fake 프로필 fallback:', err)
+  }
+
+  // 2) 실사용자 부족 시 fake 프로필로 보충 (MVP)
+  if (candidates.length < 5) {
+    const existingIds = new Set(candidates.map((c) => c.id))
+    for (const fp of FAKE_PROFILES) {
+      if (!existingIds.has(fp.id)) {
+        candidates.push(fp)
+      }
+    }
+  }
+
+  const scored = computeMatchScores(myProfile, candidates)
   return scored.slice(0, 10)
 }

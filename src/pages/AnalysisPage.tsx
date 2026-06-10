@@ -3,7 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import ProgressSteps from '@/components/ui/ProgressSteps'
 import { useProfileStore } from '@/stores/profileStore'
+import { useAuthStore } from '@/stores/authStore'
 import { analyzeStyle } from '@/lib/api'
+import { saveUserProfile, saveStyleProfile } from '@/lib/firestore'
+import { uploadAllOutfits } from '@/lib/storageUpload'
 
 const STEPS = [
   { label: 'OOTD 이미지 분석', icon: '📷' },
@@ -16,6 +19,7 @@ const STEPS = [
 export default function AnalysisPage() {
   const navigate = useNavigate()
   const { outfitImages, nickname, gender, age, setStyleProfile } = useProfileStore()
+  const user = useAuthStore((s) => s.user)
   const [currentStep, setCurrentStep] = useState(0)
   const [error, setError] = useState<string | null>(null)
 
@@ -31,17 +35,38 @@ export default function AnalysisPage() {
       })
     }, 1800)
 
-    // Call AI analysis
+    // Call AI analysis + save to Firestore/Storage
     const run = async () => {
       try {
-        const profile = await analyzeStyle({
-          daily: outfitImages.daily,
-          date: outfitImages.date,
-          mystyle: outfitImages.mystyle,
-          nickname,
-          gender,
-          age: Number(age),
-        })
+        const userId = user?.uid
+        if (!userId) throw new Error('로그인이 필요합니다')
+
+        // 1) AI 분석과 이미지 업로드를 병렬 실행
+        const [profile, outfitUrls] = await Promise.all([
+          analyzeStyle({
+            daily: outfitImages.daily,
+            date: outfitImages.date,
+            mystyle: outfitImages.mystyle,
+            nickname,
+            gender,
+            age: Number(age),
+          }),
+          uploadAllOutfits(userId, outfitImages),
+        ])
+
+        profile.userId = userId
+
+        // 2) Firestore에 유저 프로필 + 스타일 프로필 저장
+        await Promise.all([
+          saveUserProfile(userId, {
+            nickname,
+            gender,
+            age: Number(age),
+            outfitUrls,
+          }),
+          saveStyleProfile(userId, profile),
+        ])
+
         setStyleProfile(profile)
         // Wait for animation to catch up then navigate
         setTimeout(() => navigate('/style-profile', { replace: true }), 1000)

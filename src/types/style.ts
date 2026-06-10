@@ -1,5 +1,6 @@
 export interface StyleProfile {
   userId: string
+  archetypeId: number
   archetypeName: string
   archetypeCategory: string
   styleTemp: number
@@ -10,9 +11,12 @@ export interface StyleProfile {
   generatedAt: Date
 }
 
+export type ArchetypeGender = 'M' | 'F' | 'U'
+
 export interface Archetype {
   id: string
   category: string
+  gender: ArchetypeGender
   name: string
   keywords: string[]
   tempRange: { min: number; max: number }
