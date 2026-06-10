@@ -1,0 +1,6 @@
+[
+  {"id":"M1_뛰어다니는호랑이","gender":"M","archetype_id":12,"keywords":["그래픽","무채색","스트릿"],"style_temp":75,"colors":["#1A1A1A","#D8D8D8","#FAFAFA","#CDB79E"]},
+  {"id":"F1_날고싶은병아리","gender":"F","archetype_id":19,"keywords":["아방가르드","시크","실루엣"],"style_temp":90,"colors":["#4A3C32","#C7C0B4","#2A2A2A","#ECE6DA"]},
+  {"id":"F2_땅굴파는독수리","gender":"F","archetype_id":2,"keywords":["미니멀","시크","세련됨"],"style_temp":75,"colors":["#1A1A1A","#ECE7DA","#3A3A3A","#FAFAFA"]},
+  {"id":"F3_날아다니는고라니","gender":"F","archetype_id":12,"keywords":["스트릿","오버핏","화려함","시크"],"style_temp":85,"colors":["#1A1A1A","#E8E2D5","#4A4A4A","#B8B8B8"]}
+]

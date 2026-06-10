@@ -3,7 +3,7 @@
 > 세션 **시작 시 읽고, 끝낼 때 갱신**한다. 설계·규칙은 `CLAUDE.md`, 진행 상황·결정·다음 할 일은 여기.
 
 ## 현재 상태
-**M v1 빌드 완료**(30/30, 120 앵커 이미지). `similarity.py::keyword_sim` 구현+테스트 통과. 저녁에 재개 — **홀드 중**.
+**M v1 빌드 완료**(30/30, 120 앵커 이미지). `similarity.py` 4축 전부 구현(MVP) + 측정 하네스로 테스트 프로필 4명 → 6쌍 sync% 산출 완료. 다음은 앵커 보강 + κ 일관도 구현.
 
 ## 완료
 - 매칭 설계 확정: 게이트 → 4축 가중합 → 일관도 압축 (상세는 CLAUDE.md)
@@ -21,17 +21,30 @@
   - 디버깅 우회: FashionCLIP `get_image_features()`가 일부 transformers 버전에서 풀링 안 된 (1, seq, hidden)을 반환 → `vision_model + visual_projection` 직접 호출로 우회.
   - Drive 셋업: 데이터는 Mac→Drive Desktop sync(`~/Library/CloudStorage/GoogleDrive-.../My Drive/fitting/data`), 앵커는 "Shared with me" → My Drive 바로가기로 마운트(`Fitting 이미지 데이터 모음/`).
 - **[2026-06-10]** **`similarity.py::keyword_sim` 구현 + 테스트 8/8 통과** — 설계 메모 A~D 추천안대로. `KeywordIndex` dataclass + `load_keyword_index()` + `KeywordIndex.normalize_user()`. 테스트: `model/tests/test_keyword_sim.py` (self-sim, 완전 다름, 페널티, drop, 동의어 정규화, unknown warn, None 반환, 멀티 facet 현실 케이스).
+- **[2026-06-11]** `similarity.py` 4축 나머지 구현(MVP):
+  - `load_M(path)` → `(M_rescaled, ids_present)` 로더 추가
+  - `archetype_sim(a, b, M)` — int면 `M[a-1][b-1]`, Sequence[float]면 `pᵀMq` 분기
+  - `temp_sim` — `1 - |Δ|/100`, clamp [0,1]
+  - `color_sim` — hex→sRGB→XYZ→**CIELAB(D65)** 변환, 팔레트 평균 Lab 간 ΔE76, `1 - min(ΔE/100, 1)`. 빈 팔레트 None
+  - `sync_raw` — None인 축 제외 + 활성 가중치 재정규화, 100배 스케일. 활성 0개면 None
+  - `sync_final` — `50 + min(κa, κb) × (raw - 50)`, κ=1 디폴트 → raw 그대로
+  - 외부 의존 없이 stdlib만 사용 (skimage X). 단위 테스트 미작성 — 측정 하네스로 갈음 (MVP)
+- **[2026-06-11]** **측정 하네스 + 첫 sync% 산출** — `model/data/testset.json`(4명: M1/F1/F2/F3 라벨 프로필), `model/score_testset.py` 6쌍 sim/기여도 표 출력. 결과:
+  - 최고 **M1×F3 = 72.4** (둘 다 archetype 12 스트릿, 키워드 "스트릿" 공유)
+  - 최저 **M1×F1 = 51.2** (archetype 12 vs 19, 키워드 교집합 0)
+  - 관찰: archetype 축이 점수 변동 주도(가중치+raw 폭 0.64~1.00). 키워드 자카드는 토큰 적어서 0~0.2로 낮음. color sim 0.84~0.96으로 거의 평탄 — 평균 Lab MVP의 한계(무채색·베이지가 비슷한 평균 Lab으로 수렴), v2에서 팔레트별 클러스터 매칭 필요. temp는 범위 좁아(75~90) 변별력 약함.
 
 ## 진행 중
-- (없음 — 저녁까지 홀드)
+- (없음)
 
 ## 다음 (태스크 큐)
 1. **앵커 보강 + M v2 재빌드** — 아래 「성능 평가 (M v1)」의 우선순위 항목 반영. 특히 감성 내추럴(20) hub 효과, 맥시멀/캐주얼 분산, 시티보이↔시크걸 페어 약함.
-2. `similarity.py` 나머지 구현 — `archetype_sim`(M[i][j]/pᵀMq), `temp_sim`, `color_sim`(CIELAB), `sync_raw`(None 포함 가중치 재정규화), `consistency_kappa`, `sync_final`. 각각 테스트 추가.
-3. 🔴 **gender 라벨 보강 검토** — U(26)개 중 페어로 분리할 것 결정 (시티보이↔시크걸 페어 약화 문제와 연관)
-4. **archetypes.json 키워드 재매핑** (선택) — 현재 raw 토큰. 통제 어휘로 재매핑하면 LLM 추출과 마스터 데이터가 동일 정규화 거침. 단 raw → KeywordIndex.normalize_user 하면 런타임에 자동 정규화되므로 마이그레이션은 not blocking.
-5. `extract/schema.py` — LLM 출력 JSON 스키마 (`keywords.json::vocabulary`를 enum으로 강제)
-6. Firebase 연결 (추후)
+2. `similarity.py::consistency_kappa` 구현 — 유저 사진들 간 self-유사도(같은 4축 재활용). κ=1 가정 풀고 다중사진 들어오면 필요. 단위 테스트도 같이.
+3. **색 sim 개선 (v2 후보)** — MVP 평균 Lab은 무채색·베이지가 모두 비슷한 평균 Lab으로 수렴해 변별력 부족. 팔레트별 클러스터/Hungarian 매칭 또는 가중 EMD 검토.
+4. 🔴 **gender 라벨 보강 검토** — U(26)개 중 페어로 분리할 것 결정 (시티보이↔시크걸 페어 약화 문제와 연관)
+5. **archetypes.json 키워드 재매핑** (선택) — 현재 raw 토큰. 통제 어휘로 재매핑하면 LLM 추출과 마스터 데이터가 동일 정규화 거침. 단 raw → KeywordIndex.normalize_user 하면 런타임에 자동 정규화되므로 마이그레이션은 not blocking.
+6. `extract/schema.py` — LLM 출력 JSON 스키마 (`keywords.json::vocabulary`를 enum으로 강제)
+7. Firebase 연결 (추후)
 
 ## 블로커 / 열린 질문
 - 🔴 추출 JSON 스키마 미확정 (런타임용 — `keywords.json::vocabulary` enum 강제로 작성 예정)
@@ -141,3 +154,4 @@ def keyword_sim(
 - **2026-06-10** — `build_matrix.ipynb` 9 코드 셀 구현. 사용자 피드백 반영: 임베딩 입력은 흰배경 RGB + bbox 타이트 + 정사각 패딩 (RGBA 검수본 별도), M_rescaled는 풀 커버리지 전용. keyword_sim 결정은 홀드, 아키타입 임베딩 우선.
 - **2026-06-10** — M v1 빌드 성공(30/30, 120 앵커). Drive 셋업·get_image_features 버그 우회 등 디버깅 후 완주. 성능 평가 위 섹션 추가. `model/artifacts/`에 M.json·anchors.npy·anchors_ids.json·report.md 모두 저장.
 - **2026-06-10** — `similarity.py::keyword_sim` 구현. 설계 메모 A~D 추천안 그대로(warn+drop / 한쪽 빔 페널티 / KeywordIndex 헬퍼 / None 반환). 테스트 8/8 통과. 저녁 재개 위해 홀드.
+- **2026-06-11** — `similarity.py` 4축 나머지(MVP) + 측정 하네스 완성. `load_M`, `archetype_sim`(int/분포 분기), `temp_sim`, `color_sim`(CIELAB D65 + ΔE76 평균 Lab MVP), `sync_raw`(가중치 재정규화), `sync_final`(κ=1 디폴트). `model/data/testset.json`(4명) + `model/score_testset.py`로 6쌍 sync% 산출 (M1×F3=72.4 최고, M1×F1=51.2 최저). `consistency_kappa`는 다중사진 들어오면 구현.
