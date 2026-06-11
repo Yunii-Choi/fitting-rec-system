@@ -32,8 +32,8 @@ export default function MatchListPage() {
     const current = matches[currentIndex]
     if (!current || !user) return
 
-    // Firestore에 좋아요 저장
-    await saveLikeAction(user.uid, current.partnerId, 'like')
+    // Firestore에 좋아요 저장 (V2: axis_breakdown 포함)
+    await saveLikeAction(user.uid, current.partnerId, 'like', current.syncScore, current.axisBreakdown)
 
     // 상호 매칭 체크
     const mutual = await checkMutualLike(user.uid, current.partnerId)
@@ -47,7 +47,7 @@ export default function MatchListPage() {
   const handlePass = async () => {
     const current = matches[currentIndex]
     if (current && user) {
-      await saveLikeAction(user.uid, current.partnerId, 'pass')
+      await saveLikeAction(user.uid, current.partnerId, 'pass', current.syncScore, current.axisBreakdown)
     }
     nextMatch()
   }

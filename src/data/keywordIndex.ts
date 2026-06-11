@@ -48,7 +48,7 @@ interface NormalizeEntry {
   canonical: string
 }
 
-const NORMALIZE_MAP: Record<string, NormalizeEntry> = {
+export const NORMALIZE_MAP: Record<string, NormalizeEntry> = {
   // genre
   '미니멀': { facet: 'genre', canonical: '미니멀' },
   '클래식': { facet: 'genre', canonical: '클래식' },

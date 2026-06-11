@@ -1,3 +1,10 @@
+export interface AxisBreakdown {
+  archetype: number | null
+  keyword: number | null
+  temp: number | null
+  color: number | null
+}
+
 export interface Match {
   matchId: string
   partnerId: string
@@ -9,5 +16,6 @@ export interface Match {
   partnerDateMoods: string[]
   partnerOutfitUrls: string[]
   syncScore: number
+  axisBreakdown: AxisBreakdown
   chemistryNote: string
 }
