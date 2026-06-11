@@ -11,7 +11,7 @@ import type { StyleProfile, ArchetypeWeight, KeywordEntry } from '@/types/style'
 import type { Match, AxisBreakdown } from '@/types/match'
 import { ARCHETYPES } from '@/lib/masterData'
 import { getArchetypeSim, getArchetypeDistSim } from '@/data/archetypeMatrix'
-import { keywordSim } from '@/data/keywordIndex'
+import { keywordSimWeighted } from '@/data/keywordIndex'
 
 // ── 4축 가중치 ──────────────────────────────────────────────────────────
 
@@ -164,7 +164,7 @@ export function computeMatchScores(myProfile: StyleProfile, candidates: Candidat
     // 4축 유사도
     const sims: Record<string, number | null> = {
       archetype: archetypeSim(myArchId, myProfile.archetypeDistribution, cArchId, c.archetypeDistribution),
-      keyword: keywordSim(myProfile.keywords, c.keywords),
+      keyword: keywordSimWeighted(myProfile.keywordEntries, c.keywordEntries, myProfile.keywords, c.keywords),
       temp: tempSim(myProfile.styleTemp, c.styleTemp),
       color: colorSim(myProfile.colorPalette, c.colorPalette),
     }

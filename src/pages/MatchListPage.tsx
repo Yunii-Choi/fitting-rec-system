@@ -5,7 +5,7 @@ import { useProfileStore } from '@/stores/profileStore'
 import { useAuthStore } from '@/stores/authStore'
 import MatchCard from '@/components/match/MatchCard'
 import { getMatches } from '@/lib/api'
-import { saveLikeAction, checkMutualLike } from '@/lib/firestore'
+import { saveLikeAction, checkMutualLike, saveMatch } from '@/lib/firestore'
 
 export default function MatchListPage() {
   const { matches, currentIndex, loading, matchSuccess, setMatches, setLoading, nextMatch, setMatchSuccess } = useMatchStore()
@@ -35,9 +35,10 @@ export default function MatchListPage() {
     // Firestore에 좋아요 저장 (V2: axis_breakdown 포함)
     await saveLikeAction(user.uid, current.partnerId, 'like', current.syncScore, current.axisBreakdown)
 
-    // 상호 매칭 체크
+    // 상호 매칭 체크 → 성사 시 matches 컬렉션 기록
     const mutual = await checkMutualLike(user.uid, current.partnerId)
     if (mutual) {
+      await saveMatch(user.uid, current.partnerId, current.syncScore, current.axisBreakdown)
       setMatchSuccess(true)
       setTimeout(() => setMatchSuccess(false), 3000)
     }

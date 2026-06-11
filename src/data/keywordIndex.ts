@@ -226,3 +226,72 @@ export function keywordSim(rawA: string[], rawB: string[]): number | null {
   if (activeWeight === 0) return null
   return weightedSum / activeWeight
 }
+
+// ── V2: 가중 Jaccard (KeywordEntry 기반) ────────────────────────────────
+
+import type { KeywordEntry } from '@/types/style'
+
+/**
+ * KeywordEntry[] 기반 가중 Jaccard.
+ * facet별로 canonical → weight 맵을 만들고, min/max 가중 Jaccard 산출.
+ * entries가 비어있으면 기존 set Jaccard로 fallback.
+ */
+export function keywordSimWeighted(
+  entriesA: KeywordEntry[] | undefined,
+  entriesB: KeywordEntry[] | undefined,
+  rawA: string[],
+  rawB: string[],
+): number | null {
+  // entries 없으면 기존 set Jaccard fallback
+  if (!entriesA?.length || !entriesB?.length) {
+    return keywordSim(rawA, rawB)
+  }
+
+  // facet별 canonical → weight 맵 구축
+  const buildFacetMap = (entries: KeywordEntry[]) => {
+    const m: Record<Facet, Map<string, number>> = {
+      genre: new Map(), vibe: new Map(), fit: new Map(), item: new Map(), color: new Map(),
+    }
+    for (const e of entries) {
+      const norm = NORMALIZE_MAP[e.keyword]
+      if (!norm) continue
+      const facet = norm.facet as Facet
+      const canonical = norm.canonical
+      const existing = m[facet].get(canonical) ?? 0
+      m[facet].set(canonical, Math.max(existing, e.weight))
+    }
+    return m
+  }
+
+  const mapA = buildFacetMap(entriesA)
+  const mapB = buildFacetMap(entriesB)
+
+  let weightedSum = 0
+  let activeWeight = 0
+
+  for (const facet of FACETS) {
+    const fA = mapA[facet]
+    const fB = mapB[facet]
+
+    if (fA.size === 0 && fB.size === 0) continue
+
+    // 가중 Jaccard: Σ min(wA, wB) / Σ max(wA, wB)
+    const allKeys = new Set([...fA.keys(), ...fB.keys()])
+    let sumMin = 0
+    let sumMax = 0
+    for (const key of allKeys) {
+      const wA = fA.get(key) ?? 0
+      const wB = fB.get(key) ?? 0
+      sumMin += Math.min(wA, wB)
+      sumMax += Math.max(wA, wB)
+    }
+    const jaccard = sumMax === 0 ? 0 : sumMin / sumMax
+
+    const fw = FACET_WEIGHTS[facet]
+    weightedSum += fw * jaccard
+    activeWeight += fw
+  }
+
+  if (activeWeight === 0) return null
+  return weightedSum / activeWeight
+}

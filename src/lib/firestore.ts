@@ -167,3 +167,22 @@ export async function checkMutualLike(userA: string, userB: string) {
   const snap = await getDoc(doc(db, 'likes', docId))
   return snap.exists() && snap.data()?.action === 'like'
 }
+
+// ── Matches (상호 매칭 기록) ──
+
+export async function saveMatch(
+  userA: string,
+  userB: string,
+  syncScore: number,
+  axisBreakdown?: AxisBreakdown,
+) {
+  const [user1, user2] = userA < userB ? [userA, userB] : [userB, userA]
+  const docId = `${user1}_${user2}`
+  await setDoc(doc(db, 'matches', docId), {
+    user1_id: user1,
+    user2_id: user2,
+    syncScore,
+    ...(axisBreakdown && { axisBreakdown }),
+    matchedAt: serverTimestamp(),
+  })
+}
