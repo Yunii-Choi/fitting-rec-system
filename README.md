@@ -112,6 +112,212 @@ app/
 5. `/style-profile` — 스타일 프로필 결과
 6. `/matches` — 매칭 리스트 (좋아요/패스, 이성 필터 적용)
 
+## 스타일 분석 → 매칭 처리 플로우
+
+사용자가 OOTD 사진을 업로드하면, 아래 파이프라인을 거쳐 스타일 프로필이 생성되고 매칭이 이루어집니다.
+
+### 전체 파이프라인
+
+```
+[사용자 입력]                    [AI 분석]                      [매칭 엔진]
+┌──────────┐    ┌─────────────────────┐    ┌──────────────────────┐
+│ OOTD 사진 │───→│ Gemini 2.5 Flash    │───→│ 4축 가중합 스코어링    │
+│ (1~3장)   │    │ 구조화 프롬프트       │    │                      │
+│ 성별/나이  │    │ + 이미지 멀티모달     │    │ ① M[i,j] 아키타입     │
+└──────────┘    └─────────┬───────────┘    │ ② facet Jaccard 키워드 │
+                          │                │ ③ 꾸밈온도 거리         │
+                    [구조화 JSON]           │ ④ CIELAB 컬러 거리     │
+                          │                └──────────┬───────────┘
+                   [서버 측 검증]                      │
+                          │                     [싱크율 %]
+                   [Firestore 저장]                    │
+                                              [이성 필터 + 랭킹]
+                                                      │
+                                               [매칭 리스트 10명]
+```
+
+### STEP 1: 입력 수집 (`/upload` → `/analyzing`)
+
+```
+사용자 조작:
+  ├─ 데일리룩 / 데이트룩 / 나다운룩 중 1~3장 선택
+  ├─ 닉네임, 성별(M/F), 나이 입력 (이전 화면에서)
+  └─ "스타일 분석 시작" 클릭
+
+앱 내부 처리:
+  ├─ 각 이미지 File → FileReader → base64 인코딩
+  ├─ base64 + mimeType → Gemini inlineData 형식으로 변환
+  └─ 동시에 Firebase Storage에 원본 이미지 업로드 (병렬)
+```
+
+**입력 데이터 형태:**
+```typescript
+{
+  images: [{ inlineData: { data: "base64...", mimeType: "image/jpeg" } }],
+  gender: "M" | "F",
+  imageCount: 1 | 2 | 3,
+  labels: ["Daily Look", "Date Look", "My Style"]  // 업로드한 것만
+}
+```
+
+### STEP 2: 프롬프트 구성 (`buildPrompt`)
+
+앱은 아래 데이터를 **프롬프트에 동적으로 주입**하여 Gemini가 정해진 범위 내에서만 응답하도록 강제합니다.
+
+```
+프롬프트 = 시스템 역할 설정
+         + STEP 1: 아키타입 레지스트리 30개 (id|이름|카테고리|온도범위)
+         + STEP 2: 통제 어휘 63개 (5 facet × canonical terms)
+         + STEP 3: 꾸밈온도 스케일 정의 + 범위 제약
+         + STEP 4: 컬러 추출 규칙 (옷만, 피부/배경 제외)
+         + STEP 5: 데이트무드 100개 목록
+         + STEP 6: 한국어 설명 규칙
+         + 출력 JSON 스키마
+         + [복수 사진 시] 라벨 안내 + "holistically" 지시
+```
+
+**핵심 제약 조건들:**
+| 항목 | 제약 방식 |
+|------|----------|
+| 아키타입 | 30개 레지스트리에서만 선택, 성별 제한 (id 1=남성, id 2/24/25=여성) |
+| 키워드 | 63개 canonical term에서만 선택, facet 분산 필수 (genre/vibe 최소 1개씩) |
+| 꾸밈온도 | 선택한 아키타입의 tempRange 내로 제한 |
+| 데이트무드 | 100개 목록에서만 선택 |
+
+### STEP 3: Gemini API 호출
+
+```
+model.generateContent([프롬프트_텍스트, 이미지1, 이미지2?, 이미지3?])
+                                │
+                    Gemini 2.5 Flash가 수행하는 것:
+                    ├─ 이미지에서 의상 시각 분석 (색상, 핏, 아이템, 스타일)
+                    ├─ 30개 아키타입 중 가장 유사한 것 분류
+                    ├─ 63개 통제 어휘에서 보이는 특성 매칭
+                    ├─ 착장의 꾸밈 정도를 0~100 스케일로 평가
+                    ├─ 옷에서 지배적 컬러 4개를 hex로 추출
+                    ├─ 스타일에 어울리는 데이트 장소 추천
+                    └─ 한국어 한줄 설명 생성
+                                │
+                         [JSON 텍스트 응답]
+```
+
+**Gemini 원본 응답 예시:**
+```json
+{
+  "archetypeId": 29,
+  "archetypeName": "아메카지 무드",
+  "archetypeCategory": "맥시멀",
+  "styleTemp": 70,
+  "keywords": ["워크웨어", "캐주얼", "편안함", "세련됨", "시티무드", "레이어드", "셔츠", "어스톤"],
+  "colorPalette": ["#2C3E2D", "#5B7A5E", "#F5F0EB", "#8B4513"],
+  "dateMoods": ["감성 카페", "서점 나들이", "성수/한남 탐방", "와인바", "한강 산책"],
+  "description": "편안한 워크웨어룩에 세련된 시티 감성을 더했어요."
+}
+```
+
+### STEP 4: 서버 측 검증 (후처리)
+
+Gemini 응답은 **6단계 검증**을 거쳐 정제됩니다. LLM은 지시를 100% 따르지 않을 수 있으므로, 프롬프트 제약과 별도로 코드 레벨에서 강제합니다.
+
+```
+Gemini JSON 응답
+      │
+      ├─ ① archetypeId 검증
+      │   └─ 30개 레지스트리에 없는 id → 에러 throw (분석 재시도)
+      │
+      ├─ ② styleTemp 범위 clamp
+      │   └─ 아키타입 tempRange [min, max] 밖이면 경계값으로 보정
+      │   └─ 예: 아메카지(60-75)인데 80 반환 → 75로 clamp
+      │
+      ├─ ③ keywords 허용 목록 필터 ★
+      │   └─ ALLOWED_KEYWORDS (63개 Set)에 없는 키워드 제거
+      │   └─ 예: ["워크웨어", "빈티지감성"] → ["워크웨어"] ("빈티지감성"은 목록에 없으므로 제거)
+      │
+      ├─ ④ dateMoods 허용 목록 필터 ★
+      │   └─ ALLOWED_MOODS (100개 Set)에 없는 무드 제거
+      │
+      ├─ ⑤ colorPalette 최대 4개 slice
+      │   └─ 5개 이상 반환해도 앞 4개만 사용
+      │
+      └─ ⑥ StyleProfile 객체 생성
+          └─ archetypeName/Category는 레지스트리에서 재조회 (Gemini 응답 무시)
+```
+
+**검증 전후 비교 예시:**
+```
+Gemini 원본:
+  keywords: ["워크웨어", "캐주얼", "편안함", "세련됨", "시티무드", "레이어드", "셔츠", "어스톤"]
+  dateMoods: ["감성 카페", "서점 나들이", "성수/한남 탐방", "와인바", "한강 산책"]
+
+검증 후 (변경 없음 — 모두 허용 목록 내):
+  keywords: ["워크웨어", "캐주얼", "편안함", "세련됨", "시티무드", "레이어드", "셔츠", "어스톤"]
+  dateMoods: ["감성 카페", "서점 나들이", "성수/한남 탐방", "와인바", "한강 산책"]
+
+만약 Gemini가 "빈티지감성", "카페투어"를 반환했다면:
+  keywords: ["워크웨어", "캐주얼"] ← "빈티지감성" 제거됨
+  dateMoods: ["감성 카페", "서점 나들이"] ← "카페투어" 제거됨
+```
+
+### STEP 5: 데이터 저장 (Firestore)
+
+검증 완료된 StyleProfile은 두 컬렉션에 동시 저장됩니다.
+
+```
+Firestore 저장 (병렬):
+  ├─ users/{uid}
+  │   └─ { nickname, gender, age, outfitUrls, createdAt }
+  │
+  └─ styleProfiles/{uid}
+      └─ { userId, archetypeId, archetypeName, archetypeCategory,
+           styleTemp, keywords[], colorPalette[], dateMoods[],
+           description, generatedAt }
+```
+
+### STEP 6: 매칭 (`/matches`)
+
+저장된 스타일 프로필을 기반으로, Firestore의 다른 유저(+ 더미 프로필)와 4축 유사도를 계산합니다.
+
+```
+내 StyleProfile
+      │
+      ├─ Firestore에서 이성 프로필 전체 조회 (gender 필터)
+      │
+      ├─ 각 후보와 4축 유사도 계산:
+      │   ├─ ① archetype_sim = M[내 archId - 1][상대 archId - 1]  (0~1)
+      │   ├─ ② keyword_sim = facet별 Jaccard 가중합              (0~1)
+      │   │   └─ 내 keywords를 normalizeKeywords()로 facet별 Set 변환
+      │   │   └─ 상대 keywords도 동일 변환
+      │   │   └─ facet별: |A∩B| / |A∪B| × facet_weight
+      │   │   └─ 활성 facet만 재정규화
+      │   ├─ ③ temp_sim = 1 - |내 temp - 상대 temp| / 100        (0~1)
+      │   └─ ④ color_sim = 1 - ΔE_Lab / 100                     (0~1)
+      │       └─ hex → sRGB → XYZ → CIELAB 변환 → 평균 Lab 간 거리
+      │
+      ├─ sync_raw = 100 × (0.40×① + 0.30×② + 0.20×③ + 0.10×④)
+      ├─ sync_final = 50 + κ × (sync_raw - 50)  [κ=1.0 현재]
+      │
+      ├─ 점수 내림차순 정렬
+      └─ 상위 10명 반환 → 매칭 카드 UI
+```
+
+**키워드가 매칭에 기여하는 구체적 예시:**
+```
+나의 keywords:  ["워크웨어", "캐주얼", "편안함", "레이어드", "어스톤"]
+상대 keywords:  ["워크웨어", "스트릿", "편안함", "오버핏", "무채색"]
+
+정규화 후 facet별 비교:
+  genre: {워크웨어, 캐주얼} vs {워크웨어, 스트릿}  → Jaccard = 1/3 = 0.333
+  vibe:  {편안함}          vs {편안함}              → Jaccard = 1/1 = 1.000
+  fit:   {레이어드}        vs {오버핏}              → Jaccard = 0/2 = 0.000
+  item:  {}                vs {}                    → 비활성 (재정규화에서 제외)
+  color: {어스톤}          vs {무채색}              → Jaccard = 0/2 = 0.000
+
+keyword_sim = (0.40×0.333 + 0.25×1.000 + 0.15×0.000 + 0.05×0.000)
+            / (0.40 + 0.25 + 0.15 + 0.05)
+            = 0.383 / 0.85
+            = 0.451
+```
+
 ## Gemini AI 프롬프트
 
 ### 호출 시점
