@@ -89,46 +89,56 @@ WHERE  dm.mood_name IN ('감성 카페', '서점 나들이', '성수/한남 탐�
 
 
 -- ────────────────────────────────────────────────────────────
--- 4. 스타일 프로필 상세 조회 (화면 04: Style Profile)
+-- 4. 스타일 프로필 상세 조회 (화면 04: CTE 통합 SELECT)
 -- ────────────────────────────────────────────────────────────
 
--- 4-1. 프로필 기본 + 아키타입 정보 + κ
-SELECT u.nickname,
-       sa.archetype_name,
-       sa.gender AS archetype_gender,
-       sp.style_temp,
-       sp.consistency_kappa,
-       sp.description
-FROM   style_profiles sp
-JOIN   users u             ON sp.user_id = u.user_id
-JOIN   style_archetypes sa ON sp.archetype_id = sa.archetype_id
-WHERE  sp.user_id = 'uid_001';
-
--- 4-2. 아키타입 분포 (V2 ★)
-SELECT sa.archetype_name, sa.gender, pa.weight
-FROM   profile_archetypes pa
-JOIN   style_archetypes sa ON pa.archetype_id = sa.archetype_id
-WHERE  pa.profile_id = 1001
-ORDER BY pa.weight DESC;
-
--- 4-3. 키워드 + facet + weight (V2 ★)
-SELECT k.keyword, k.facet, pk.weight
-FROM   profile_keywords pk
-JOIN   style_keywords k ON pk.keyword_id = k.keyword_id
-WHERE  pk.profile_id = 1001
-ORDER BY pk.weight DESC;
-
--- 4-4. 컬러 팔레트
-SELECT hex_code
-FROM   profile_colors
-WHERE  profile_id = 1001
-ORDER BY display_order;
-
--- 4-5. 데이트 무드
-SELECT dm.mood_name, dm.icon
-FROM   profile_date_moods pdm
-JOIN   date_moods dm ON pdm.mood_id = dm.mood_id
-WHERE  pdm.profile_id = 1001;
+WITH
+profile_base AS (
+    SELECT sp.profile_id, u.nickname, sa.archetype_name,
+           sp.style_temp, sp.consistency_kappa, sp.description
+    FROM   style_profiles sp
+    JOIN   users u             ON sp.user_id = u.user_id
+    JOIN   style_archetypes sa ON sp.archetype_id = sa.archetype_id
+    WHERE  sp.user_id = 'uid_001'
+),
+keywords_agg AS (
+    SELECT pk.profile_id,
+           GROUP_CONCAT(CONCAT('#', k.keyword) ORDER BY pk.weight DESC SEPARATOR ' ') AS keywords
+    FROM   profile_keywords pk
+    JOIN   style_keywords k ON pk.keyword_id = k.keyword_id
+    GROUP BY pk.profile_id
+),
+colors_pivot AS (
+    SELECT profile_id,
+           MAX(CASE WHEN display_order = 1 THEN hex_code END) AS color_1,
+           MAX(CASE WHEN display_order = 2 THEN hex_code END) AS color_2,
+           MAX(CASE WHEN display_order = 3 THEN hex_code END) AS color_3,
+           MAX(CASE WHEN display_order = 4 THEN hex_code END) AS color_4
+    FROM   profile_colors
+    GROUP BY profile_id
+),
+moods_agg AS (
+    SELECT pdm.profile_id,
+           GROUP_CONCAT(CONCAT(dm.icon, ' ', dm.mood_name) SEPARATOR ', ') AS date_moods
+    FROM   profile_date_moods pdm
+    JOIN   date_moods dm ON pdm.mood_id = dm.mood_id
+    GROUP BY pdm.profile_id
+),
+arch_dist_agg AS (
+    SELECT pa.profile_id,
+           GROUP_CONCAT(CONCAT(sa.archetype_name, '(', ROUND(pa.weight*100), '%)') ORDER BY pa.weight DESC SEPARATOR ' · ') AS archetype_distribution
+    FROM   profile_archetypes pa
+    JOIN   style_archetypes sa ON pa.archetype_id = sa.archetype_id
+    GROUP BY pa.profile_id
+)
+SELECT pb.nickname, pb.archetype_name, pb.style_temp, pb.consistency_kappa,
+       ka.keywords, cp.color_1, cp.color_2, cp.color_3, cp.color_4,
+       ma.date_moods, pb.description, ad.archetype_distribution
+FROM   profile_base pb
+LEFT JOIN keywords_agg   ka ON pb.profile_id = ka.profile_id
+LEFT JOIN colors_pivot   cp ON pb.profile_id = cp.profile_id
+LEFT JOIN moods_agg      ma ON pb.profile_id = ma.profile_id
+LEFT JOIN arch_dist_agg  ad ON pb.profile_id = ad.profile_id;
 
 
 -- ────────────────────────────────────────────────────────────
