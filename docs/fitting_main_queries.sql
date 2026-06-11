@@ -231,7 +231,7 @@ LEFT JOIN arch_dist_agg  ad ON pb.profile_id = ad.profile_id;
 
 
 -- ================================================================
--- [쿼리 3] 화면 5: 매칭 리스트 — 매칭된 유저 정보 조회 (SELECT)
+-- [쿼리 3] 화면 5: 매칭 리스트 — 매칭된 유저 정보 조회 (CTE 통합 SELECT)
 -- ================================================================
 -- 시점: /matches 화면 진입 시, 4축 가중합 스코어링으로 이미 산출된
 --       매칭 결과를 기반으로 상대방 정보를 조합하여 카드 UI에 뿌립니다.
@@ -242,129 +242,134 @@ LEFT JOIN arch_dist_agg  ad ON pb.profile_id = ad.profile_id;
 --   ③ 일관도 κ 보정: sync_final = 50 + min(κ_나, κ_상대) × (raw - 50)
 --   ④ 내림차순 정렬 → 상위 10명 반환
 --
--- 아래 쿼리는 매칭 엔진이 선정한 후보들의 상세 정보를 가져옵니다.
+-- 화면 구성요소 → 결과 컬럼 매핑:
+--   ① STYLE SYNC %                → sync_score
+--   ② 4축 상세 (아키/키워드/온도/컬러)  → sim_archetype, sim_keyword, sim_temp, sim_color
+--   ③ 상대방 OOTD 이미지            → outfit_images
+--   ④ 닉네임 + 나이                 → partner_nickname, partner_age
+--   ⑤ 상대 키워드 태그              → partner_keywords
+--   ⑥ 케미 노트 (공통 키워드 기반)    → shared_keywords
+--   ⑦ 공통 데이트 무드 추천          → shared_moods
+--
+-- 사용 테이블: user_likes, users, style_profiles, style_archetypes,
+--             profile_keywords, style_keywords, user_outfits, outfit_categories,
+--             profile_date_moods, date_moods
 -- ================================================================
 
--- ── 메인 쿼리: 매칭 후보 카드에 필요한 전체 정보 ──
--- 하나의 후보(uid_042)에 대한 전체 정보 조회
+WITH
+-- ── CTE 1: 매칭 후보 기본 정보 + 싱크율 + 4축 상세 ──
+match_base AS (
+    SELECT ul.candidate_user_id,
+           u.nickname                                              AS partner_nickname,
+           u.age                                                   AS partner_age,
+           sa.archetype_name                                       AS partner_archetype,
+           sp.style_temp                                           AS partner_temp,
+           sp.profile_id                                           AS partner_profile_id,
+           ul.sync_score,
+           JSON_EXTRACT(ul.axis_breakdown, '$.archetype')          AS sim_archetype,
+           JSON_EXTRACT(ul.axis_breakdown, '$.keyword')            AS sim_keyword,
+           JSON_EXTRACT(ul.axis_breakdown, '$.temp')               AS sim_temp,
+           JSON_EXTRACT(ul.axis_breakdown, '$.color')              AS sim_color
+    FROM   user_likes ul
+    JOIN   users u             ON ul.candidate_user_id = u.user_id
+    JOIN   style_profiles sp   ON ul.candidate_user_id = sp.user_id
+    JOIN   style_archetypes sa ON sp.archetype_id = sa.archetype_id
+    WHERE  ul.user_id = 'uid_001'
+    ORDER BY ul.sync_score DESC
+    LIMIT  10
+),
 
--- (A) 후보 기본 정보 + 싱크율 + 4축 상세
-SELECT u.nickname                               AS partner_nickname,
-       u.age                                     AS partner_age,
-       sa.archetype_name                         AS partner_archetype,
-       sp.style_temp                             AS partner_temp,
-       ul.sync_score,
-       JSON_EXTRACT(ul.axis_breakdown, '$.archetype') AS sim_archetype,
-       JSON_EXTRACT(ul.axis_breakdown, '$.keyword')   AS sim_keyword,
-       JSON_EXTRACT(ul.axis_breakdown, '$.temp')      AS sim_temp,
-       JSON_EXTRACT(ul.axis_breakdown, '$.color')     AS sim_color
-FROM   user_likes ul
-JOIN   users u             ON ul.candidate_user_id = u.user_id
-JOIN   style_profiles sp   ON ul.candidate_user_id = sp.user_id
-JOIN   style_archetypes sa ON sp.archetype_id = sa.archetype_id
-WHERE  ul.user_id = 'uid_001'
-  AND  ul.candidate_user_id = 'uid_042';
+-- ── CTE 2: 후보별 스타일 키워드 집계 ──
+partner_keywords AS (
+    SELECT sp.user_id,
+           GROUP_CONCAT(
+             CONCAT('#', k.keyword)
+             ORDER BY pk.weight DESC
+             SEPARATOR ' '
+           ) AS keywords
+    FROM   profile_keywords pk
+    JOIN   style_keywords k  ON pk.keyword_id = k.keyword_id
+    JOIN   style_profiles sp ON pk.profile_id = sp.profile_id
+    GROUP BY sp.user_id
+),
 
--- 결과 예시:
--- | partner_nickname | partner_age | partner_archetype | partner_temp | sync_score | sim_archetype | sim_keyword | sim_temp | sim_color |
--- |-----------------|-------------|------------------|-------------|------------|--------------|-------------|----------|-----------|
--- | 수빈             | 24          | 감성 내추럴        | 58          | 73         | 0.7728       | 0.4510      | 0.9400   | 0.8800    |
+-- ── CTE 3: 후보별 OOTD 이미지 URL 집계 ──
+partner_outfits AS (
+    SELECT uo.user_id,
+           GROUP_CONCAT(
+             uo.image_url
+             ORDER BY oc.display_order
+             SEPARATOR ', '
+           ) AS outfit_images
+    FROM   user_outfits uo
+    JOIN   outfit_categories oc ON uo.category_id = oc.category_id
+    GROUP BY uo.user_id
+),
 
+-- ── CTE 4: 나와 후보의 공통 키워드 (케미 노트 생성용) ──
+shared_keywords AS (
+    SELECT sp_you.user_id AS candidate_user_id,
+           GROUP_CONCAT(
+             CONCAT('#', k.keyword)
+             SEPARATOR ' '
+           ) AS shared_kw
+    FROM   profile_keywords pk_me
+    JOIN   profile_keywords pk_you ON pk_me.keyword_id = pk_you.keyword_id
+    JOIN   style_keywords k        ON pk_me.keyword_id = k.keyword_id
+    JOIN   style_profiles sp_me    ON pk_me.profile_id = sp_me.profile_id
+    JOIN   style_profiles sp_you   ON pk_you.profile_id = sp_you.profile_id
+    WHERE  sp_me.user_id = 'uid_001'
+    GROUP BY sp_you.user_id
+),
 
--- (B) 후보의 스타일 키워드 (태그 표시용)
-SELECT k.keyword, k.facet, pk.weight
-FROM   profile_keywords pk
-JOIN   style_keywords k    ON pk.keyword_id = k.keyword_id
-JOIN   style_profiles sp   ON pk.profile_id = sp.profile_id
-WHERE  sp.user_id = 'uid_042'
-ORDER BY pk.weight DESC;
+-- ── CTE 5: 나와 후보의 공통 데이트 무드 (추천 코스용) ──
+shared_moods AS (
+    SELECT sp_you.user_id AS candidate_user_id,
+           GROUP_CONCAT(
+             CONCAT(dm.icon, ' ', dm.mood_name)
+             SEPARATOR ', '
+           ) AS shared_mood
+    FROM   profile_date_moods pdm_me
+    JOIN   profile_date_moods pdm_you ON pdm_me.mood_id = pdm_you.mood_id
+    JOIN   date_moods dm              ON pdm_me.mood_id = dm.mood_id
+    JOIN   style_profiles sp_me       ON pdm_me.profile_id = sp_me.profile_id
+    JOIN   style_profiles sp_you      ON pdm_you.profile_id = sp_you.profile_id
+    WHERE  sp_me.user_id = 'uid_001'
+    GROUP BY sp_you.user_id
+)
 
--- 결과 예시:
--- | keyword  | facet | weight |
--- |---------|-------|--------|
--- | 내추럴   | vibe  | 0.90   |
--- | 캐주얼   | genre | 0.85   |
--- | 편안함   | vibe  | 0.80   |
--- | 어스톤   | color | 0.70   |
+-- ════════════════════════════════════════════════════════════
+-- 메인 SELECT: 매칭 카드 UI에 필요한 전체 정보를 후보별 1행으로 반환
+-- 상위 10명, 싱크율 내림차순
+-- ════════════════════════════════════════════════════════════
 
+SELECT mb.sync_score,                          -- ① STYLE SYNC %
+       mb.sim_archetype,                       -- ② 아키타입 축 유사도
+       mb.sim_keyword,                         -- ② 키워드 축 유사도
+       mb.sim_temp,                            -- ② 온도 축 유사도
+       mb.sim_color,                           -- ② 컬러 축 유사도
+       po.outfit_images,                       -- ③ OOTD 이미지 URL들
+       mb.partner_nickname,                    -- ④ 닉네임
+       mb.partner_age,                         -- ④ 나이
+       mb.partner_archetype,                   -- ④ 아키타입 이름
+       mb.partner_temp,                        -- ④ 꾸밈온도
+       pk.keywords           AS partner_keywords,   -- ⑤ 키워드 태그 ("#내추럴 #캐주얼 ...")
+       sk.shared_kw          AS shared_keywords,    -- ⑥ 공통 키워드 ("#캐주얼 #편안함")
+       sm.shared_mood        AS shared_moods        -- ⑦ 공통 무드 ("☕ 감성 카페, 🌊 한강 산책")
+FROM   match_base mb
+LEFT JOIN partner_keywords pk ON mb.candidate_user_id = pk.user_id
+LEFT JOIN partner_outfits  po ON mb.candidate_user_id = po.user_id
+LEFT JOIN shared_keywords  sk ON mb.candidate_user_id = sk.candidate_user_id
+LEFT JOIN shared_moods     sm ON mb.candidate_user_id = sm.candidate_user_id
+ORDER BY mb.sync_score DESC;
 
--- (C) 후보의 OOTD 이미지 (카드 사진 표시용)
-SELECT uo.image_url, oc.name AS category
-FROM   user_outfits uo
-JOIN   outfit_categories oc ON uo.category_id = oc.category_id
-WHERE  uo.user_id = 'uid_042'
-ORDER BY oc.display_order;
-
--- 결과 예시:
--- | image_url                                           | category |
--- |-----------------------------------------------------|---------|
--- | gs://fitting-524/ootd/uid_042/daily/1718345678.jpg  | 데일리룩  |
--- | gs://fitting-524/ootd/uid_042/date/1718345679.jpg   | 데이트룩  |
-
-
--- (D) 두 사람의 공통 키워드 (케미 노트 생성용)
-SELECT k.keyword, k.facet
-FROM   profile_keywords pk_me
-JOIN   profile_keywords pk_you
-       ON pk_me.keyword_id = pk_you.keyword_id
-JOIN   style_keywords k
-       ON pk_me.keyword_id = k.keyword_id
-JOIN   style_profiles sp_me  ON pk_me.profile_id = sp_me.profile_id
-JOIN   style_profiles sp_you ON pk_you.profile_id = sp_you.profile_id
-WHERE  sp_me.user_id = 'uid_001'
-  AND  sp_you.user_id = 'uid_042';
-
--- 결과 예시:
--- | keyword | facet |
--- |---------|-------|
--- | 캐주얼  | genre |
--- | 편안함  | vibe  |
--- | 어스톤  | color |
--- → 케미 노트: "둘 다 캐주얼 스타일을 좋아해요!"
-
-
--- (E) 두 사람의 공통 데이트 무드 (추천 데이트 코스용)
-SELECT dm.mood_name, dm.icon
-FROM   profile_date_moods pdm_me
-JOIN   profile_date_moods pdm_you
-       ON pdm_me.mood_id = pdm_you.mood_id
-JOIN   date_moods dm
-       ON pdm_me.mood_id = dm.mood_id
-JOIN   style_profiles sp_me  ON pdm_me.profile_id = sp_me.profile_id
-JOIN   style_profiles sp_you ON pdm_you.profile_id = sp_you.profile_id
-WHERE  sp_me.user_id = 'uid_001'
-  AND  sp_you.user_id = 'uid_042';
-
--- 결과 예시:
--- | mood_name     | icon |
--- |--------------|------|
--- | 감성 카페      | ☕   |
--- | 한강 산책      | 🌊   |
--- → 공통 데이트 추천: "감성 카페 데이트 추천"
-
-
--- ── 전체 매칭 리스트 조회 (상위 10명, 싱크율 내림차순) ──
--- 앱에서는 이 결과를 스와이프 카드 UI로 표시
-
-SELECT u.nickname,
-       u.age,
-       sa.archetype_name,
-       sp.style_temp,
-       ul.sync_score,
-       ul.axis_breakdown
-FROM   user_likes ul
-JOIN   users u             ON ul.candidate_user_id = u.user_id
-JOIN   style_profiles sp   ON ul.candidate_user_id = sp.user_id
-JOIN   style_archetypes sa ON sp.archetype_id = sa.archetype_id
-WHERE  ul.user_id = 'uid_001'
-  AND  ul.action = 'LIKE'
-ORDER BY ul.sync_score DESC
-LIMIT 10;
-
--- 결과 예시:
--- | nickname | age | archetype_name | style_temp | sync_score | axis_breakdown                                                    |
--- |---------|-----|---------------|------------|------------|-------------------------------------------------------------------|
--- | 수빈     | 24  | 감성 내추럴     | 58         | 73         | {"archetype": 0.77, "keyword": 0.45, "temp": 0.94, "color": 0.88} |
--- | 하은     | 25  | 프렌치 시크     | 72         | 68         | {"archetype": 0.66, "keyword": 0.38, "temp": 0.98, "color": 0.82} |
--- | 예린     | 23  | 빈티지 로맨틱   | 75         | 62         | {"archetype": 0.52, "keyword": 0.41, "temp": 0.95, "color": 0.76} |
--- | ...     | ... | ...           | ...        | ...        | ...                                                               |
+-- ════════════════════════════════════════════════════════════
+-- 결과 (상위 10명, 각 1행):
+-- ════════════════════════════════════════════════════════════
+--
+-- | sync_score | sim_archetype | sim_keyword | sim_temp | sim_color | outfit_images                    | partner_nickname | partner_age | partner_archetype | partner_temp | partner_keywords                        | shared_keywords         | shared_moods                        |
+-- |------------|--------------|-------------|----------|-----------|----------------------------------|-----------------|-------------|------------------|-------------|----------------------------------------|------------------------|-------------------------------------|
+-- | 73         | 0.7728       | 0.4510      | 0.9400   | 0.8800    | gs://fitting-524/ootd/uid_042/.. | 수빈             | 24          | 감성 내추럴         | 58          | #내추럴 #캐주얼 #편안함 #어스톤            | #캐주얼 #편안함 #어스톤  | ☕ 감성 카페, 🌊 한강 산책              |
+-- | 68         | 0.6600       | 0.3800      | 0.9800   | 0.8200    | gs://fitting-524/ootd/uid_038/.. | 하은             | 25          | 프렌치 시크         | 72          | #프렌치 #에포트리스 #깔끔 #베레모          | #깔끔                   | 📚 서점 나들이, 🛍 편집숍              |
+-- | 62         | 0.5200       | 0.4100      | 0.9500   | 0.7600    | gs://fitting-524/ootd/uid_055/.. | 예린             | 23          | 빈티지 로맨틱       | 75          | #레트로 #내추럴 #플로럴 #레이스            | #내추럴                  | ☕ 감성 카페                          |
+-- | ...        | ...          | ...         | ...      | ...       | ...                              | ...             | ...         | ...              | ...         | ...                                    | ...                    | ...                                 |
