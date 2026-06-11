@@ -255,10 +255,14 @@ Respond with ONLY a JSON object (no markdown, no explanation):
 | `receive 1/2/3 photo(s)` | 업로드 장수에 따라 변경 |
 | 복수 사진 시 추가 | `The {N} photos below are labeled: Daily Look, Date Look, My Style. Analyze them holistically as one person's style.` |
 
-### 후처리 (파싱)
+### 후처리 (파싱 + 검증)
 
 Gemini 응답에서 JSON을 추출한 뒤 서버 측 검증을 수행합니다:
 1. `archetypeId` — 30개 레지스트리에서 유효성 검증 (없으면 에러)
 2. `styleTemp` — 아키타입 tempRange 범위 내로 clamp
-3. `colorPalette` — 최대 4개로 slice
-4. 결과를 `StyleProfile` 객체로 변환 → Firestore 저장
+3. `keywords` — **63개 통제 어휘(VOCABULARY) 허용 목록 필터** (목록 밖 키워드 제거)
+4. `dateMoods` — **100개 데이트무드 허용 목록 필터** (목록 밖 무드 제거)
+5. `colorPalette` — 최대 4개로 slice
+6. 결과를 `StyleProfile` 객체로 변환 → Firestore 저장
+
+Gemini가 통제 어휘 밖의 키워드나 무드를 반환해도 앱에 노출되지 않습니다.

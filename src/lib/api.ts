@@ -10,6 +10,11 @@ import { getArchetypeImageUrls } from '@/lib/driveImages'
 
 const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY || '')
 
+// ── 허용 목록 (서버 측 필터용) ──────────────────────────────────────────
+
+const ALLOWED_KEYWORDS = new Set(Object.values(VOCABULARY).flat())
+const ALLOWED_MOODS = new Set(DATE_MOODS.map((m) => m.name))
+
 interface AnalyzeInput {
   daily: File | null
   date: File | null
@@ -180,15 +185,23 @@ export async function analyzeStyle(input: AnalyzeInput): Promise<StyleProfile> {
     Math.min(archetype.tempRange.max, Number(parsed.styleTemp))
   )
 
+  // 통제 어휘 필터: 허용 목록에 없는 키워드/무드 제거
+  const validKeywords = Array.isArray(parsed.keywords)
+    ? parsed.keywords.filter((k: string) => ALLOWED_KEYWORDS.has(k))
+    : []
+  const validMoods = Array.isArray(parsed.dateMoods)
+    ? parsed.dateMoods.filter((m: string) => ALLOWED_MOODS.has(m))
+    : []
+
   return {
     userId: '',
     archetypeId: archId,
     archetypeName: archetype.name,
     archetypeCategory: archetype.category,
     styleTemp: clampedTemp,
-    keywords: Array.isArray(parsed.keywords) ? parsed.keywords : [],
+    keywords: validKeywords,
     colorPalette: Array.isArray(parsed.colorPalette) ? parsed.colorPalette.slice(0, 4) : [],
-    dateMoods: Array.isArray(parsed.dateMoods) ? parsed.dateMoods : [],
+    dateMoods: validMoods,
     description: parsed.description || '',
     generatedAt: new Date(),
   }
