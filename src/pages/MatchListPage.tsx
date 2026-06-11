@@ -10,13 +10,14 @@ import { saveLikeAction, checkMutualLike } from '@/lib/firestore'
 export default function MatchListPage() {
   const { matches, currentIndex, loading, matchSuccess, setMatches, setLoading, nextMatch, setMatchSuccess } = useMatchStore()
   const styleProfile = useProfileStore((s) => s.styleProfile)
+  const myGender = useProfileStore((s) => s.gender)
   const user = useAuthStore((s) => s.user)
 
   useEffect(() => {
     const load = async () => {
       setLoading(true)
       try {
-        const data = await getMatches(styleProfile!)
+        const data = await getMatches(styleProfile!, myGender)
         setMatches(data)
       } catch (err) {
         console.error(err)

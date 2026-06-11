@@ -16,7 +16,8 @@ export default function StyleProfilePage() {
     return null
   }
 
-  const dailyPreview = outfitImages.daily ? URL.createObjectURL(outfitImages.daily) : null
+  const firstImage = outfitImages.daily ?? outfitImages.date ?? outfitImages.mystyle ?? null
+  const mainPreview = firstImage ? URL.createObjectURL(firstImage) : null
 
   return (
     <motion.div
@@ -33,8 +34,8 @@ export default function StyleProfilePage() {
 
       {/* Main Photo */}
       <div className="w-3/4 mx-auto aspect-square rounded-xl overflow-hidden border-2 border-accent bg-surface">
-        {dailyPreview ? (
-          <img src={dailyPreview} alt="OOTD" className="w-full h-full object-cover" />
+        {mainPreview ? (
+          <img src={mainPreview} alt="OOTD" className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-4xl">👕</div>
         )}

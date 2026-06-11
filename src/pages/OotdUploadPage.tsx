@@ -7,10 +7,10 @@ export default function OotdUploadPage() {
   const navigate = useNavigate()
   const { outfitImages, setOutfitImage } = useProfileStore()
 
-  const hasDaily = !!outfitImages.daily
+  const hasAny = !!(outfitImages.daily || outfitImages.date || outfitImages.mystyle)
 
   const handleSubmit = () => {
-    if (hasDaily) navigate('/analyzing')
+    if (hasAny) navigate('/analyzing')
   }
 
   return (
@@ -28,7 +28,6 @@ export default function OotdUploadPage() {
           icon="👕"
           label="데일리룩"
           note="평소 스타일"
-          required
           file={outfitImages.daily}
           onSelect={(f) => setOutfitImage('daily', f)}
         />
@@ -51,12 +50,12 @@ export default function OotdUploadPage() {
       </div>
 
       <p className="text-center text-xs text-text-dim mt-4">
-        📸 최소 1장(데일리룩) 필수 · 최대 3장
+        📸 최소 1장 필수 · 최대 3장
       </p>
 
       <div className="flex-1" />
 
-      <Button onClick={handleSubmit} disabled={!hasDaily} className={!hasDaily ? 'opacity-50' : ''}>
+      <Button onClick={handleSubmit} disabled={!hasAny} className={!hasAny ? 'opacity-50' : ''}>
         스타일 분석 시작
       </Button>
     </div>

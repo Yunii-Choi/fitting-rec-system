@@ -6,7 +6,6 @@ import { ARCHETYPES, DATE_MOODS } from '@/lib/masterData'
 import { VOCABULARY } from '@/data/keywordIndex'
 import { computeMatchScores, type CandidateProfile } from '@/lib/matching'
 import { getAllStyleProfiles, getUserProfiles } from '@/lib/firestore'
-import { FAKE_PROFILES } from '@/lib/fakeProfiles'
 import { getArchetypeImageUrls } from '@/lib/driveImages'
 
 const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY || '')
@@ -195,19 +194,22 @@ export async function analyzeStyle(input: AnalyzeInput): Promise<StyleProfile> {
   }
 }
 
-export async function getMatches(myProfile: StyleProfile): Promise<Match[]> {
+export async function getMatches(myProfile: StyleProfile, myGender: Gender): Promise<Match[]> {
+  const oppositeGender: Gender = myGender === 'M' ? 'F' : 'M'
   const candidates: CandidateProfile[] = []
 
-  // 1) Firestore 실사용자 프로필 조회
+  // 1) Firestore 프로필 조회 (더미 + 실사용자)
   try {
     const firestoreProfiles = await getAllStyleProfiles(myProfile.userId)
     if (firestoreProfiles.length > 0) {
-      // 유저 정보 (닉네임, 나이) 일괄 조회
       const userIds = firestoreProfiles.map((p) => p.id)
       const userMap = await getUserProfiles(userIds)
 
       for (const sp of firestoreProfiles) {
         const user = userMap.get(sp.id)
+        // 이성 필터: 상대방 성별이 반대여야 매칭
+        if (user?.gender && user.gender !== oppositeGender) continue
+
         candidates.push({
           id: sp.id,
           nickname: user?.nickname ?? '익명',
@@ -225,17 +227,7 @@ export async function getMatches(myProfile: StyleProfile): Promise<Match[]> {
       }
     }
   } catch (err) {
-    console.warn('[getMatches] Firestore 조회 실패, fake 프로필 fallback:', err)
-  }
-
-  // 2) 실사용자 부족 시 fake 프로필로 보충 (MVP)
-  if (candidates.length < 5) {
-    const existingIds = new Set(candidates.map((c) => c.id))
-    for (const fp of FAKE_PROFILES) {
-      if (!existingIds.has(fp.id)) {
-        candidates.push(fp)
-      }
-    }
+    console.warn('[getMatches] Firestore 조회 실패:', err)
   }
 
   const scored = computeMatchScores(myProfile, candidates)
